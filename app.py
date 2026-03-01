@@ -56,7 +56,7 @@ SLOT_ICONS = {
     'hands':'🧤','feet':'👟','ring':'💍','neck':'📿','any':'🎒'
 }
 CLASS_ICONS = {
-    'barbarian':'🪓','Barbarian':'🪓','tank':'🛡️','rogue':'🗡️',
+    'barbarian':'🪓','tank':'🛡️','rogue':'🗡️',
     'mage':'🔮','summoner':'👁️','healer':'✨','ranger':'🏹',
 }
 NO_VERSION_ROUTES = {
