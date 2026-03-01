@@ -9,37 +9,74 @@
   </div>
 </div>
 
-{# My owned backs #}
-<div class="card" style="margin-bottom:20px;">
-  <div class="card-title">🎒 My Backpack Cosmetics</div>
-  {% if owned_backs %}
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    {% for b in owned_backs %}
-    {% set is_eq = (b.get('id')|string == equipped_back_id) %}
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid {% if is_eq %}var(--gold){% else %}var(--border){% endif %};">
-      <div>
-        <div style="font-family:'Cinzel',serif;font-size:0.92rem;font-weight:600;color:{% if is_eq %}var(--gold2){% else %}var(--text1){% endif %};">
-          🎒 {{ b.get('display_name','?') }}
-          {% if is_eq %}<span class="badge badge-gold" style="margin-left:8px;font-size:0.65rem;">EQUIPPED</span>{% endif %}
-        </div>
-        <div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">ID: {{ b.get('id','?') }}</div>
-      </div>
-      <div style="font-size:0.8rem;color:var(--gold2);">✅ Owned</div>
-    </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="empty-state"><div class="icon">🎒</div><p>No backpacks owned yet.</p></div>
-  {% endif %}
+{# ── Tab nav ─────────────────────────────────────────────────────── #}
+<div style="display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);">
+  <button class="cosm-tab active" data-tab="backs" onclick="switchTab('backs',this)">🎒 Backpacks</button>
+  <button class="cosm-tab" data-tab="skins" onclick="switchTab('skins',this)">🎨 Skins Shop</button>
+  <button class="cosm-tab" data-tab="consumables" onclick="switchTab('consumables',this)">🧪 Consumables</button>
 </div>
 
-<div class="grid-2">
-  {# Skins shop #}
+{# ── Tab: My Backpacks ─────────────────────────────────────────────── #}
+<div id="tab-backs">
+  <div class="grid-2">
+    {# Owned #}
+    <div class="card">
+      <div class="card-title">🎒 My Backpacks</div>
+      {% if owned_backs %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for b in owned_backs %}
+        {% set is_eq = (b.get('id')|string == equipped_back_id) %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid {% if is_eq %}var(--gold){% else %}var(--border){% endif %};">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.92rem;font-weight:600;color:{% if is_eq %}var(--gold2){% else %}var(--text){% endif %};">
+              🎒 {{ b.get('display_name','?') }}
+              {% if is_eq %}<span class="badge badge-gold" style="margin-left:8px;font-size:0.65rem;">EQUIPPED</span>{% endif %}
+            </div>
+            <div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">ID: {{ b.get('id','?') }}</div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--gold2);">✅ Owned</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="icon">🎒</div><p>No backpacks owned yet.</p></div>
+      {% endif %}
+    </div>
+
+    {# Shop #}
+    <div class="card">
+      <div class="card-title">🛍️ Backpack Shop</div>
+      {% set blist = backs.get('back_items',[]) %}
+      {% if blist %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for b in blist %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.88rem;font-weight:600;">{{ b.get('display_name','?') }}</div>
+            <div style="font-size:0.7rem;color:var(--text3);">ID: {{ b.get('id','?') }}</div>
+          </div>
+          <div style="text-align:right;font-size:0.8rem;">
+            {% if b.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">💎 {{ b.get('platinum_cost') }}</div>{% endif %}
+            {% if b.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💠 {{ b.get('gem_cost') }}</div>{% endif %}
+            {% if b.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🥇 {{ "{:,}".format(b.get('gold_cost','0')|int) }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="icon">🛍️</div><p>No backpacks in shop.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── Tab: Skins Shop ─────────────────────────────────────────────── #}
+<div id="tab-skins" style="display:none;">
   <div class="card">
     <div class="card-title">🎨 Character Skins Shop</div>
     {% set slist = shaders.get('shaders',[]) %}
     {% if slist %}
-    <div style="display:flex;flex-direction:column;gap:8px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
       {% for s in slist %}
       <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
         <div>
@@ -58,30 +95,257 @@
     <div class="empty-state"><div class="icon">🎨</div><p>No skins available.</p></div>
     {% endif %}
   </div>
+</div>
 
-  {# Backpack shop #}
-  <div class="card">
-    <div class="card-title">🛍️ Backpack Shop</div>
-    {% set blist = backs.get('back_items',[]) %}
-    {% if blist %}
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      {% for b in blist %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
-        <div>
-          <div style="font-family:'Cinzel',serif;font-size:0.88rem;font-weight:600;">{{ b.get('display_name','?') }}</div>
-          <div style="font-size:0.7rem;color:var(--text3);">ID: {{ b.get('id','?') }}</div>
+{# ── Tab: Consumables ────────────────────────────────────────────── #}
+
+{#
+  Build a lookup: consumable_id -> slot (1/2/3) from equipped_consumables.
+  equipped_consumables = [{"consumable_id":"5","slot":"1"}, ...]
+#}
+{% set eq_map = {} %}
+{% for ec in consumables.get('equipped_consumables', []) %}
+  {% set _ = eq_map.update({ec.get('consumable_id')|string: ec.get('slot')|int}) %}
+{% endfor %}
+
+<div id="tab-consumables" style="display:none;">
+
+  {# ── 3 equip slots at the top ─────────────────────────────────── #}
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title">⚡ Equipped Slots
+      <span style="font-size:0.72rem;color:var(--text3);font-family:'Crimson Text',serif;font-weight:400;margin-left:8px;">3 slots available</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      {% for slot_num in [1,2,3] %}
+      {% set filled = namespace(cid=None, name=None, icon=None, color=None) %}
+      {% for ec in consumables.get('equipped_consumables', []) %}
+        {% if ec.get('slot')|int == slot_num %}
+          {% set filled.cid = ec.get('consumable_id')|string %}
+          {# find name from consumables list #}
+          {% for c in consumables.get('consumables', []) %}
+            {% if c.get('consumable_id')|string == filled.cid %}
+              {% set filled.name = c.get('name') %}
+              {% set nl = c.get('name','').lower() %}
+              {% set ek = c.get('effect_key','') %}
+              {% if 'health' in nl or 'hp' in nl %}{% set filled.icon = '❤️' %}{% set filled.color = '#ff6666' %}
+              {% elif 'mana' in nl %}{% set filled.icon = '💙' %}{% set filled.color = '#5580d8' %}
+              {% elif 'resurrect' in ek %}{% set filled.icon = '☀️' %}{% set filled.color = '#e8c96a' %}
+              {% elif 'summon' in ek %}{% set filled.icon = '👾' %}{% set filled.color = '#aa66cc' %}
+              {% else %}{% set filled.icon = '🧪' %}{% set filled.color = 'var(--teal2)' %}{% endif %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+
+      <div id="eq-slot-{{ slot_num }}"
+           style="padding:14px;background:var(--bg3);border-radius:8px;min-height:90px;
+                  border:1px solid {% if filled.cid %}rgba(201,168,76,0.45){% else %}var(--border){% endif %};
+                  display:flex;flex-direction:column;justify-content:space-between;position:relative;">
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">
+          Slot {{ slot_num }}
         </div>
-        <div style="text-align:right;font-size:0.8rem;">
-          {% if b.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">💎 {{ b.get('platinum_cost') }}</div>{% endif %}
-          {% if b.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💠 {{ b.get('gem_cost') }}</div>{% endif %}
-          {% if b.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🥇 {{ "{:,}".format(b.get('gold_cost','0')|int) }}</div>{% endif %}
+        {% if filled.cid %}
+        <div style="display:flex;align-items:center;gap:8px;flex:1;">
+          <span style="font-size:1.4rem;">{{ filled.icon }}</span>
+          <div style="min-width:0;">
+            <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:600;color:var(--gold2);">{{ filled.name }}</div>
+            <div style="font-size:0.68rem;color:var(--text3);">ID {{ filled.cid }}</div>
+          </div>
+        </div>
+        <button class="btn-sm btn-danger" style="margin-top:8px;width:100%;"
+                onclick="unequipConsumable({{ slot_num }})">🔓 Unequip</button>
+        {% else %}
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:0.82rem;color:var(--text3);font-style:italic;">— Empty —</span>
+        </div>
+        <button class="btn-sm" style="margin-top:8px;width:100%;background:var(--bg4);border:1px dashed var(--border);color:var(--text3);" disabled>+ Equip</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div style="font-size:0.72rem;color:var(--text3);margin-top:10px;">
+      💡 Click <strong style="color:var(--gold2);">Equip →</strong> on any consumable below to assign it to a slot.
+    </div>
+  </div>
+
+  {# ── Consumables inventory ────────────────────────────────────── #}
+  <div class="card">
+    <div class="card-title">🧪 Your Consumables</div>
+    {% set cons = consumables.get('consumables', []) %}
+    {% if cons %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
+      {% for c in cons %}
+      {% set ek   = c.get('effect_key','') %}
+      {% set nl   = c.get('name','').lower() %}
+      {% set cid  = c.get('consumable_id')|string %}
+      {% set in_slot = eq_map.get(cid) %}
+      {% if 'health' in nl or 'hp' in nl %}{% set icon='❤️' %}{% set color='#ff6666' %}
+      {% elif 'mana' in nl %}{% set icon='💙' %}{% set color='#5580d8' %}
+      {% elif 'resurrect' in ek %}{% set icon='☀️' %}{% set color='#e8c96a' %}
+      {% elif 'summon' in ek %}{% set icon='👾' %}{% set color='#aa66cc' %}
+      {% else %}{% set icon='🧪' %}{% set color='var(--teal2)' %}{% endif %}
+
+      <div style="padding:14px;background:var(--bg3);border-radius:8px;
+                  border:1px solid {% if in_slot %}rgba(201,168,76,0.45){% else %}var(--border){% endif %};
+                  border-left:3px solid {{ color }};">
+        {# Header row #}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <span style="font-size:1.5rem;line-height:1;">{{ icon }}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:'Cinzel',serif;font-size:0.88rem;font-weight:600;color:var(--text);">
+              {{ c.get('name','?') }}
+              {% if in_slot %}
+              <span class="badge badge-gold" style="font-size:0.6rem;margin-left:6px;">SLOT {{ in_slot }}</span>
+              {% endif %}
+            </div>
+            <div style="font-size:0.68rem;color:var(--text3);margin-top:1px;">ID: {{ cid }}</div>
+          </div>
+          <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:800;color:{{ color }};">×{{ c.get('amount','0') }}</div>
+        </div>
+
+        {# Effect badge #}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span class="badge" style="background:rgba(58,170,138,0.12);border:1px solid rgba(58,170,138,0.3);color:var(--teal2);font-size:0.7rem;">
+            {{ ek }}{% if c.get('effect_value') %}: {{ c.get('effect_value') }}%{% endif %}
+          </span>
+        </div>
+
+        {# Action buttons #}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          {% if in_slot %}
+          <button class="btn-sm btn-danger" style="flex:1;"
+                  onclick="unequipConsumable({{ in_slot }})">🔓 Unequip (Slot {{ in_slot }})</button>
+          {% else %}
+          <button class="btn-sm btn-primary-sm" style="flex:1;"
+                  onclick="openEquipConsModal({{ cid }}, '{{ c.get('name','?')|replace("'","") }}')">⚡ Equip →</button>
+          {% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state"><div class="icon">🛍️</div><p>No backpacks in shop.</p></div>
+    <div class="empty-state"><div class="icon">🧪</div><p>No consumables in inventory.</p></div>
     {% endif %}
   </div>
 </div>
+
+{# ── Equip consumable modal ───────────────────────────────────────── #}
+<div id="equip-cons-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;min-width:320px;max-width:400px;width:90%;">
+    <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);margin-bottom:4px;">⚡ Equip Consumable</div>
+    <div style="font-size:0.85rem;color:var(--text2);margin-bottom:18px;" id="equip-cons-name">—</div>
+
+    <div style="margin-bottom:18px;">
+      <div style="font-size:0.78rem;color:var(--text3);margin-bottom:8px;letter-spacing:0.05em;">CHOOSE SLOT</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;" id="equip-cons-slots">
+        {% for slot_num in [1,2,3] %}
+        {% set filled_name = namespace(v=None) %}
+        {% for ec in consumables.get('equipped_consumables', []) %}
+          {% if ec.get('slot')|int == slot_num %}
+            {% for c in consumables.get('consumables', []) %}
+              {% if c.get('consumable_id')|string == ec.get('consumable_id')|string %}
+                {% set filled_name.v = c.get('name') %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+        <button class="cons-slot-btn" data-slot="{{ slot_num }}"
+                onclick="selectConsSlot(this)">
+          <div style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--text3);">Slot {{ slot_num }}</div>
+          <div style="font-size:0.7rem;margin-top:3px;{% if filled_name.v %}color:#ffaa44;{% else %}color:var(--text3);{% endif %}">
+            {% if filled_name.v %}⚠️ {{ filled_name.v[:18] }}{% if filled_name.v|length > 18 %}…{% endif %}{% else %}Empty{% endif %}
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+      <div style="font-size:0.7rem;color:#ffaa44;margin-top:8px;">⚠️ Slots marked in orange already have a consumable — it will be replaced.</div>
+    </div>
+
+    <div style="display:flex;gap:8px;">
+      <button id="equip-cons-confirm" class="btn-primary" style="flex:1;" onclick="confirmEquipCons()" disabled>⚡ Equip</button>
+      <button id="equip-cons-cancel" class="btn-cancel" onclick="closeEquipConsModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+// ── Tab switcher ──────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  document.querySelectorAll('.cosm-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#tab-backs,#tab-skins,#tab-consumables').forEach(el => el.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = '';
+}
+const hash = location.hash.replace('#','');
+if (['backs','skins','consumables'].includes(hash)) {
+  switchTab(hash, document.querySelector(`[data-tab="${hash}"]`));
+}
+
+// ── Equip consumable modal ────────────────────────────────────────
+let pendingConsId   = null;
+let pendingConsSlot = null;
+
+function openEquipConsModal(id, name) {
+  pendingConsId   = id;
+  pendingConsSlot = null;
+  document.getElementById('equip-cons-name').textContent = name;
+  document.getElementById('equip-cons-confirm').disabled = true;
+  document.querySelectorAll('.cons-slot-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('equip-cons-modal').style.display = 'flex';
+}
+
+function closeEquipConsModal() {
+  document.getElementById('equip-cons-modal').style.display = 'none';
+  pendingConsId   = null;
+  pendingConsSlot = null;
+}
+
+function selectConsSlot(btn) {
+  document.querySelectorAll('.cons-slot-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  pendingConsSlot = parseInt(btn.dataset.slot, 10);
+  document.getElementById('equip-cons-confirm').disabled = false;
+}
+
+async function confirmEquipCons() {
+  if (!pendingConsId || !pendingConsSlot) return;
+  const btn = document.getElementById('equip-cons-confirm');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  const res = await apiAction('/action/equip_consumable', {
+    consumable_id: pendingConsId,
+    slot: pendingConsSlot
+  });
+  if (res.status === 'success') {
+    toast(`✅ ${res.name || 'Consumable'} equipped to slot ${pendingConsSlot}!`);
+    closeEquipConsModal();
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+    btn.disabled = false;
+    btn.textContent = '⚡ Equip';
+  }
+}
+
+async function unequipConsumable(slot) {
+  if (!confirm(`Unequip consumable from slot ${slot}?`)) return;
+  const res = await apiAction('/action/equip_consumable', {
+    consumable_id: -1,
+    slot: slot
+  });
+  if (res.status === 'success') {
+    toast(`✅ Slot ${slot} cleared!`);
+    setTimeout(() => location.reload(), 600);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+  }
+}
+
+// Close modal on backdrop
+document.getElementById('equip-cons-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEquipConsModal();
+});
+</script>
 {% endblock %}

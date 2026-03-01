@@ -5,40 +5,45 @@
 <div class="page-header">
   <div>
     <div class="page-title">💬 Global Chat</div>
-    <div class="page-subtitle">{{ messages.get('messages', [])|length }} messages loaded</div>
+    <div class="page-subtitle" id="chat-subtitle">{{ messages.get('messages', [])|length }} messages loaded</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="poll-indicator" style="font-size:0.75rem;color:var(--text3);">🔄 Auto-refresh: 15s</span>
+    <button id="poll-toggle" class="btn-sm" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:4px 10px;font-size:0.75rem;cursor:pointer;">Pause</button>
   </div>
 </div>
 
 <div class="card" style="max-width:720px; margin: auto;">
   <div class="card-title">📢 Live Messages</div>
-  {% set msgs = messages.get('messages', []) %}
-  {% if msgs %}
   <div id="chat-messages" style="max-height:500px;overflow-y:auto;margin-bottom:14px;">
-    {% for m in msgs %}
-    {% set sender = m.get('username','?') %}
-    {% set is_dev = '[Dev]' in sender %}
-    {% set is_streamer = '[Streamer]' in sender %}
-    <div class="chat-msg" style="{% if is_dev %}background:rgba(100,100,255,0.04);{% elif is_streamer %}background:rgba(255,100,150,0.04);{% endif %}padding:10px 8px;border-radius:5px;">
-      <span class="chat-sender {% if is_dev %}dev{% elif is_streamer %}streamer{% endif %}">
-        {% if is_dev %}🔧{% elif is_streamer %}🎥{% else %}⚔️{% endif %}
-        {{ sender }}
-      </span>
-      <div class="chat-text">{{ m.get('message', '') }}</div>
-      <div class="chat-time" data-ts="{{ m.get('time_created','') }}"></div>
-    </div>
-    {% endfor %}
+    {% set msgs = messages.get('messages', []) %}
+    {% if msgs %}
+      {% for m in msgs %}
+      {% set sender = m.get('username','?') %}
+      {% set is_dev = '[Dev]' in sender %}
+      {% set is_streamer = '[Streamer]' in sender %}
+      <div class="chat-msg"
+           data-id="{{ m.get('id', loop.index) }}"
+           style="{% if is_dev %}background:rgba(100,100,255,0.04);{% elif is_streamer %}background:rgba(255,100,150,0.04);{% endif %}padding:10px 8px;border-radius:5px;">
+        <span class="chat-sender {% if is_dev %}dev{% elif is_streamer %}streamer{% endif %}">
+          {% if is_dev %}🔧{% elif is_streamer %}🎥{% else %}⚔️{% endif %}
+          {{ sender }}
+        </span>
+        <div class="chat-text">{{ m.get('message', '') }}</div>
+        <div class="chat-time" data-ts="{{ m.get('time_created','') }}"></div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state" style="padding:30px;"><div class="icon">💬</div><p>No chat messages.</p></div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="empty-state" style="padding:30px;"><div class="icon">💬</div><p>No chat messages.</p></div>
-  {% endif %}
 
   {# Send message #}
   <div style="border-top:1px solid var(--border);padding-top:14px;">
-    <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">
-      Send Global Message
-    </div>
+    <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Send Global Message</div>
     <div style="display:flex;gap:8px;">
-      <input type="text" id="chat-input" placeholder="Type your message..." style="flex:1;" maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+      <input type="text" id="chat-input" placeholder="Type your message..." style="flex:1;" maxlength="200"
+             onkeydown="if(event.key==='Enter')sendChat()">
       <button class="btn-primary" style="white-space:nowrap;padding:8px 18px;" onclick="sendChat()">Send ↵</button>
     </div>
     <div style="font-size:0.7rem;color:var(--text3);margin-top:5px;">Max 200 characters</div>
@@ -46,25 +51,104 @@
 </div>
 
 <script>
-// Convert timestamps + scroll to bottom
-document.querySelectorAll('.chat-time[data-ts]').forEach(el => {
-  const ts = parseInt(el.dataset.ts, 10);
-  if (!isNaN(ts) && ts > 0) el.textContent = new Date(ts * 1000).toLocaleString();
-});
-const chat = document.getElementById('chat-messages');
-if (chat) chat.scrollTop = chat.scrollHeight;
+// ── Render helpers ────────────────────────────────────────────────────────────
+function fmtTs(ts) {
+  const t = parseInt(ts, 10);
+  return (!isNaN(t) && t > 0) ? new Date(t * 1000).toLocaleString() : '';
+}
 
+// Format timestamps on initial load
+document.querySelectorAll('.chat-time[data-ts]').forEach(el => {
+  el.textContent = fmtTs(el.dataset.ts);
+});
+
+// Scroll to bottom
+const chatBox = document.getElementById('chat-messages');
+if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+
+// Track known message IDs to avoid duplicates
+const knownIds = new Set(
+  Array.from(document.querySelectorAll('.chat-msg[data-id]')).map(el => el.dataset.id)
+);
+
+function buildMsgEl(m) {
+  const sender     = m.username || '?';
+  const is_dev     = sender.includes('[Dev]');
+  const is_str     = sender.includes('[Streamer]');
+  const div        = document.createElement('div');
+  div.className    = 'chat-msg';
+  div.dataset.id   = m.id ?? (Date.now() + Math.random());
+  div.style.cssText = (is_dev ? 'background:rgba(100,100,255,0.04);' : is_str ? 'background:rgba(255,100,150,0.04);' : '') + 'padding:10px 8px;border-radius:5px;';
+  div.innerHTML = `
+    <span class="chat-sender${is_dev?' dev':is_str?' streamer':''}">${is_dev?'🔧':is_str?'🎥':'⚔️'} ${sender}</span>
+    <div class="chat-text">${m.message||''}</div>
+    <div class="chat-time">${fmtTs(m.time_created)}</div>
+  `;
+  return div;
+}
+
+// ── Live polling ──────────────────────────────────────────────────────────────
+let pollInterval = null;
+let pollActive   = true;
+const POLL_MS    = 15000;
+
+function startPoll() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(pollChat, POLL_MS);
+}
+
+async function pollChat() {
+  try {
+    const res  = await fetch('/api/chat_messages');
+    const data = await res.json();
+    const msgs = data.messages || [];
+
+    let newCount = 0;
+    const wasAtBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 60;
+
+    msgs.forEach(m => {
+      const mid = String(m.id ?? '');
+      if (!mid || knownIds.has(mid)) return;
+      knownIds.add(mid);
+      chatBox.appendChild(buildMsgEl(m));
+      newCount++;
+    });
+
+    if (newCount > 0) {
+      document.getElementById('chat-subtitle').textContent =
+        `${chatBox.querySelectorAll('.chat-msg').length} messages loaded`;
+      if (wasAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  } catch { /* silently ignore */ }
+}
+
+document.getElementById('poll-toggle').addEventListener('click', function() {
+  pollActive = !pollActive;
+  if (pollActive) {
+    startPoll();
+    this.textContent = 'Pause';
+    document.getElementById('poll-indicator').textContent = '🔄 Auto-refresh: 15s';
+  } else {
+    clearInterval(pollInterval);
+    this.textContent = 'Resume';
+    document.getElementById('poll-indicator').textContent = '⏸ Paused';
+  }
+});
+
+startPoll();
+
+// ── Send message ──────────────────────────────────────────────────────────────
 async function sendChat() {
   const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
+  const msg   = input.value.trim();
   if (!msg) return;
-  const btn = input.nextElementSibling;
+  const btn   = input.nextElementSibling;
   btn.disabled = true;
-  const res = await apiAction('/action/send_chat', { message: msg });
+  const res = await apiAction('/action/send_chat', {message: msg});
   if (res.status === 'success') {
     toast('✅ Message sent!');
     input.value = '';
-    setTimeout(() => location.reload(), 700);
+    setTimeout(pollChat, 500);  // immediate poll to show own message
   } else {
     toast('❌ ' + (res.message || res.error || 'Failed to send'), false);
   }

@@ -155,17 +155,38 @@
 
 {# ── Inventory Panel ──────────────────────────────────────────────── #}
 <div class="card" style="margin-top:20px;">
-  <div class="card-title">🎒 Inventory — Click to Equip / Unequip</div>
+  <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <span>🎒 Inventory — Click to Equip / Unequip</span>
+    <span id="eq-inv-count" style="font-size:0.75rem;color:var(--text3);font-family:'Crimson Text',serif;font-weight:400;"></span>
+  </div>
 
-  {# Slot filter tabs #}
-  <div class="filters" style="margin-bottom:12px;">
-    <div class="filter-group" id="slot-filter-tabs">
-      <button class="filter-btn active" data-slot="all" onclick="filterInv(this,'all')">All</button>
-      {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
-      <button class="filter-btn" data-slot="{{ s }}" onclick="filterInv(this,'{{ s }}')">
-        {{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}
-      </button>
-      {% endfor %}
+  {# Controls row: slot tabs + sort + search #}
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+    {# Slot filter #}
+    <div class="filters" style="margin-bottom:0;">
+      <div class="filter-group" id="slot-filter-tabs">
+        <button class="filter-btn active" data-slot="all" onclick="filterInv(this,'all')">All</button>
+        {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+        <button class="filter-btn" data-slot="{{ s }}" onclick="filterInv(this,'{{ s }}')">
+          {{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Sort + Search row #}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <div class="filter-group" id="sort-tabs">
+        <button class="filter-btn active" data-sort="none" onclick="setSortInv(this,'none','')">Default</button>
+        <button class="filter-btn" data-sort="power-desc" onclick="setSortInv(this,'power','desc')">✨ Power ↓</button>
+        <button class="filter-btn" data-sort="power-asc"  onclick="setSortInv(this,'power','asc')">✨ Power ↑</button>
+        <button class="filter-btn" data-sort="name-asc"   onclick="setSortInv(this,'name','asc')">📛 Name A-Z</button>
+        <button class="filter-btn" data-sort="name-desc"  onclick="setSortInv(this,'name','desc')">📛 Name Z-A</button>
+      </div>
+      <input type="text" id="eq-inv-search" placeholder="🔍 Search..."
+             style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
+                    border-radius:5px;padding:5px 10px;font-size:0.8rem;width:160px;"
+             oninput="applyEqFilters()">
     </div>
   </div>
 
@@ -173,7 +194,7 @@
     {% for item in all_inv %}
     {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
     {% set is_equipped = (item.get('id','')|string) in equipped_ids %}
-    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}"
+    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}" data-power="{{ (item.get('power',0)|float * 100)|round(2) }}" data-name="{{ item.get('item_name','')|lower }}"
          style="{% if is_equipped %}border-color:var(--gold);background:rgba(201,168,76,0.07);{% endif %}cursor:pointer;"
          onclick="handleInvClick({{ item.get('id') }}, '{{ item.get('slot','') }}', {{ 'true' if is_equipped else 'false' }}, '{{ item.get('item_name','') }}')">
       {% if is_equipped %}
@@ -225,15 +246,59 @@
 </div>
 
 <script>
-let pendingEquipId = null;
+let pendingEquipId   = null;
 let pendingEquipSlot = null;
+let currentSlot      = 'all';
+let currentSortKey   = '';
+let currentSortDir   = '';
 
 function filterInv(btn, slot) {
+  currentSlot = slot;
   document.querySelectorAll('#slot-filter-tabs .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('.inv-item').forEach(el => {
-    el.style.display = (slot === 'all' || el.dataset.slot === slot) ? '' : 'none';
+  applyEqFilters();
+}
+
+function setSortInv(btn, key, dir) {
+  currentSortKey = key;
+  currentSortDir = dir;
+  document.querySelectorAll('#sort-tabs .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyEqFilters();
+}
+
+function applyEqFilters() {
+  const query = (document.getElementById('eq-inv-search').value || '').trim().toLowerCase();
+  const grid  = document.getElementById('inv-grid');
+  const allCards = Array.from(grid.querySelectorAll('.inv-item'));
+
+  // Filter
+  let visible = allCards.filter(card => {
+    const slotOk  = currentSlot === 'all' || card.dataset.slot === currentSlot;
+    const nameOk  = !query || card.dataset.name.includes(query);
+    card.style.display = (slotOk && nameOk) ? '' : 'none';
+    return slotOk && nameOk;
   });
+
+  // Sort
+  if (currentSortKey && visible.length > 1) {
+    visible.sort((a, b) => {
+      let av, bv;
+      if (currentSortKey === 'power') {
+        av = parseFloat(a.dataset.power || 0);
+        bv = parseFloat(b.dataset.power || 0);
+        return currentSortDir === 'desc' ? bv - av : av - bv;
+      } else {
+        av = (a.dataset.name || '').toLowerCase();
+        bv = (b.dataset.name || '').toLowerCase();
+        return currentSortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+    });
+    visible.forEach(card => grid.appendChild(card));
+  }
+
+  const count = visible.length;
+  document.getElementById('eq-inv-count').textContent = `${count} item${count !== 1 ? 's' : ''}`;
 }
 
 function handleInvClick(id, slot, isEquipped, name) {
@@ -292,5 +357,8 @@ async function unequipSlot(slot) {
 document.getElementById('equip-modal').addEventListener('click', function(e) {
   if (e.target === this) closeEquipModal();
 });
+
+// Init count
+applyEqFilters();
 </script>
 {% endblock %}

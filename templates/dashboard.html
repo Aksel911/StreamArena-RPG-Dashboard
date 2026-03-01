@@ -105,9 +105,13 @@
   <div class="card">
     <div class="card-title">🏰 Guild Status</div>
     {% if udata.get('guild_id') and udata.get('guild_id')|int > 0 %}
-    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:12px;">
-      Guild ID: <strong style="color:var(--gold)">{{ udata.get('guild_id') }}</strong>
-    </p>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:0.75rem;color:var(--text3);letter-spacing:0.05em;margin-bottom:3px;">GUILD ID</div>
+      <div style="font-size:0.9rem;color:var(--text2);">ID: <strong style="color:var(--gold)">{{ udata.get('guild_id') }}</strong></div>
+      {% if guild_name %}
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--gold2);margin-top:4px;">🏰 {{ guild_name }}</div>
+      {% endif %}
+    </div>
     <a href="{{ url_for('guild') }}" class="btn-primary" style="text-decoration:none;display:inline-block;">View Guild →</a>
     {% else %}
     <div class="empty-state"><div class="icon">🏰</div><p>Not in a guild.</p></div>
@@ -124,6 +128,36 @@
     </div>
     {% else %}
     <div style="color:var(--text3);font-size:0.85rem;">No skills loaded.</div>
+    {% endif %}
+
+    <div class="divider"></div>
+
+    {# ── Consumables ──────────────────────────────── #}
+    <div class="card-title" style="margin-bottom:10px;">🧪 Consumables</div>
+    {% set cons = consumables.get('consumables', []) %}
+    {% if cons %}
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      {% for c in cons %}
+      {% set ek = c.get('effect_key','') %}
+      {% set icon = '🧪' if 'potion' in c.get('name','').lower() else '☀️' if 'resurrect' in ek else '👾' if 'summon' in ek else '✨' %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">{{ icon }}</span>
+          <div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);">{{ c.get('name','?') }}</div>
+            {% if c.get('effect_value') %}
+            <div style="font-size:0.7rem;color:var(--teal2);">{{ c.get('effect_key','') }}: {{ c.get('effect_value') }}%</div>
+            {% else %}
+            <div style="font-size:0.7rem;color:var(--text3);">{{ c.get('effect_key','') }}</div>
+            {% endif %}
+          </div>
+        </div>
+        <span style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);">×{{ c.get('amount','0') }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:var(--text3);font-size:0.85rem;">No consumables.</div>
     {% endif %}
   </div>
 </div>

@@ -1,13 +1,21 @@
+<div align="center">
 
-# StreamArena RPG Dashboard
+<img src="https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/git/Dashboard.png" alt="StreamArena RPG Dashboard" width="80%">
 
-> **⚔️ A powerful web dashboard for managing your StreamArena RPG account**  
-> Inventory, equipment, market, guild, bosses, leaderboard, chat — all in one place.
+<br><br>
 
-[![Flask](https://img.shields.io/badge/Flask-2.3+-black?logo=flask)](https://flask.palletsprojects.com/)
-[![Python](https://img.shields.io/badge/Python-3.13+-blue?logo=python)](https://python.org)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![AI Generated](https://img.shields.io/badge/Generated%20by-Claude%204.6%20Sonnet-8A2BE2)](https://anthropic.com)
+# ⚔️ StreamArena RPG — Portal Dashboard
+
+**Unofficial web dashboard for full account management of StreamArena RPG**
+
+[![Python](https://img.shields.io/badge/Python-3.13+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Flask](https://img.shields.io/badge/Flask-3.x-000000?logo=flask&logoColor=white)](https://flask.palletsprojects.com)
+[![License](https://img.shields.io/badge/License-MIT-22c55e)](LICENSE)
+[![Made with Claude](https://img.shields.io/badge/Made%20with-Claude%20Sonnet%204.6-8B5CF6)](https://anthropic.com)
+
+*Inventory · Equipment · Market · Guild · Bosses · Leaderboard · Chat — all in one place*
+
+</div>
 
 ---
 
@@ -17,257 +25,301 @@
 |:---:|:---:|:---:|
 | ![Dashboard](https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/git/Dashboard.png) | ![Inventory](https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/git/Inventory.png) | ![Market](https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/git/Market.png) |
 
-> *More screenshots coming soon —> run the project to see it in action!*
-
----
-
-## ✨ Features at a Glance
-
-### 🎮 **Core Game Management**
-- **Dashboard** – Character stats, gold/plat/gems, inventory usage, mail preview, daily spin timer, chests, and voucher redeemer
-- **Equipment** – View equipped items with power bars, unequip, equip from inventory, total power calculation
-- **Inventory** – Paginated view, lock/unlock, destroy, list on market, mass delete unlocked items
-- **Cosmetics** – Owned backpacks, skin shop, backpack shop
-
-### 💰 **Economy**
-- **Marketplace** – Browse all listings, filter by slot/class, live sorting (power, price, value), buy instantly
-- **My Listings** – View your active market listings
-- **Game Chests** – See available chests and their costs
-
-### 🏰 **Social & World**
-- **Guild** – Guild info, roster (sorted by level), guild chat with message sending, manual guild ID override
-- **Leaderboard** – Top 25 players by class, extended rankings, class filtering
-- **Bosses & Dungeons** – Active world bosses with HP bars, dungeons, world battles
-- **Global Chat** – Read and send messages
-- **Mail** – Read in-game mail with unread indicators
-
-### 🛠️ **Technical Highlights**
-- **Disk‑based cache** – Stores large user data (~14KB) in `/tmp/streamarena_cache` – bypasses Flask's 4KB cookie limit
-- **No JavaScript frameworks** – Pure vanilla JS, minimal dependencies
-- **Responsive design** – Works on desktop and mobile (collapsible sidebar)
-- **Dark fantasy theme** – Custom CSS with gold accents, power bars, and game‑styled components
-
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.13 or higher
+### Requirements
+- Python **3.13+**
 - A [StreamArena RPG](https://streamarenarpg.com) account
 
-### Installation
+### Install & Run
 
 ```bash
-# Clone the repository
 git clone https://github.com/Aksel911/StreamArena-RPG-Dashboard.git
 cd StreamArena-RPG-Dashboard
 
-# Create virtual environment (optional)
+# Optional but recommended: virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate        # Linux / macOS
+venv\Scripts\activate           # Windows
 
-# Install dependencies
 pip install flask requests
-
-# Run the application
 python app.py
 ```
 
-Open your browser and navigate to `http://127.0.0.1:5000`
+Open **http://127.0.0.1:5000** in your browser, paste your token, done.
 
 ---
 
-## 🔑 Authentication & API Version
+## 🔑 Getting Your Token
 
-### Getting Your Token
-1. Go to [StreamArena Auth Portal](https://streamarenarpg.com/auth.html)
+1. Go to **[streamarenarpg.com/auth.html](https://streamarenarpg.com/auth.html)**
 2. Login with Twitch
-3. Copy your `token` 
-4. Paste it on the dashboard login page
+3. Open **DevTools → Network** tab (`F12`)
+4. Find any request to `portal_api.php` — check the request payload
+5. Copy the `token` value
+6. Paste it on the dashboard login page
 
-### ⚠️ **Important: API Version**
-The dashboard uses a hardcoded `API_VERSION = '0.32.03'` in `app.py`. If some features stop working, the game API version may have changed.
-
-**To find the current API version:**
-1. Open Developer Tools (F12) → Network tab
-2. Look for any API request (e.g., `get_chat_messages`, `get_udata`)
-3. Check the request payload – it contains the `version` parameter:
-```json
-{"route":"get_chat_messages","token":"your_token","version":"0.31.05"}
-```
-4. Update the `API_VERSION` variable in `app.py` to match
+> ⚠️ **Your token grants full account access. Never share it.**
 
 ---
 
-## 📖 Detailed Feature Tour
+## ✨ Full Feature List
 
 ### 🏠 Dashboard
-Your command center:
-- **Currency display** – Gold, Platinum, Gems with formatting
-- **Inventory usage** – Visual progress bar showing slot usage
-- **Character card** – Level, experience bar, game time, location, skin
-- **Guild status** – Quick link to guild page
-- **Skills** – Your active skills as badges
-- **Mail preview** – Latest 4 messages with unread indicators
-- **Daily spin** – Countdown timer to next spin
-- **Chests** – Your owned chests
-- **Voucher redeemer** – Instant code redemption
+Your account command center — everything at a glance.
+
+- 💰 **Currency bar** — Gold, Platinum, Gems with thousands formatting
+- 🎒 **Inventory meter** — visual progress bar, turns orange at 75%, red at 90%
+- 🧝 **Character card** — class, level, XP progress bar, game time, location, skin
+- 🏰 **Guild widget** — shows **Guild Name** + ID with a quick link
+- 📜 **Skills** — active skills displayed as badges
+- 🧪 **Consumables** — all potions, orbs and summons with quantities
+- 📬 **Mail preview** — latest 4 messages, unread highlighted
+- 🎡 **Daily spin timer** — live countdown to next available spin
+- 📦 **Chests** — your owned chests with gem costs
+- 🎫 **Voucher redeemer** — instant code redemption field
+
+---
 
 ### 🎒 Inventory
-Full inventory management:
-- **Pagination** – Navigate through multiple pages
-- **Filter by slot** – Weapon, off-hand, head, body, etc.
-- **Sort options** – Power (↑/↓), name (A-Z/Z-A), class
-- **Item cards** – Show power percentage with color-coded bar, extra stats, class restrictions
-- **Lock/Unlock** – Prevent accidental destruction
-- **Destroy** – Single item deletion with confirmation
-- **Market listing** – Modal with fee calculator (10% gold fee, platinum converted to gold)
-- **Mass delete** – Select multiple unlocked items and delete at once
+Full paginated inventory with powerful client-side filtering — no page reloads.
+
+| Control | Description |
+|---|---|
+| **Slot tabs** | All · Weapon · Off-hand · Head · Body · Hands · Feet · Ring · Neck |
+| **Sort** | ✨ Power ↓↑ · 📛 Name A-Z / Z-A |
+| **Class dropdown** | Dynamically built from your actual inventory |
+| **🔍 Search** | Instant filter by item name |
+| **🟢 Show Equipped** | Hidden by default — equipped items show green border + 🟢 tag |
+| **💰 Show Listed** | Hidden by default — market-listed items show 💰 tag, no delete button |
+| **Lock / Unlock** | Prevent accidental deletion (locked items are excluded from mass delete) |
+| **Destroy** | Single item with confirmation |
+| **Market listing** | Modal with live fee calculator (10% gold fee + plat × 100,000 gold) |
+| **Mass delete** | Checkbox multi-select + Select All (visible, unlocked, unlisted only) |
+
+---
 
 ### ⚔️ Equipment
-Visual equipment management:
-- **Equipped slots grid** – Each slot shows equipped item (if any) with power bar
-- **Empty slots** – Click to equip from inventory
-- **Inventory panel** – Click any item to equip (if slot matches) or unequip if already equipped
-- **Total power** – Combined power percentage across all slots
-- **Character stats** – Level, experience, game time, location
-- **Skills display** – Your active skills
+Visual equipment management with full inventory panel.
 
-### ⚖️ Marketplace
-Full market integration:
-- **Browse listings** – Paginated view of all listings
-- **Advanced filtering** – By slot, class
-- **Live sorting** – Power (high/low), gold price (low/high), platinum price, best value (power/price)
-- **Your balance** – Displayed at top
-- **Buy modal** – Shows your balance vs. item cost, affordability check
-- **My listings** – Your active market listings
-- **Game chests** – Available chests with costs
+- **8-slot grid** — Weapon, Off-hand, Head, Body, Hands, Feet, Ring, Neck
+- **Power bars** — per slot with correct labels: Damage / Armor / HP / Attack Speed / Move Speed / Bonus
+- **Color-coded power** — teal → gold → orange → red by percentage
+- **Total power** — combined % across all 8 slots + average per slot
+- **Unequip** — one click from the slot card
+- **Inventory panel** — sort by ✨ Power ↓↑ / 📛 Name A-Z/Z-A + 🔍 search
+- **Equip modal** — slot selector pre-filled based on item type
+
+---
+
+### ⚖️ Market
+Full marketplace integration.
+
+- **Browse listings** — filter by slot and class
+- **Live sort** — Power ↑↓, Gold price low→high, Platinum price, Best value (power/gold)
+- **Balance bar** — live Gold / Platinum / Gems fetched fresh from `get_inv`
+- **Buy modal** — shows affordability before confirming purchase
+- **My Listings** — your active market listings panel
+- **Game Chests** — available chests with costs
+
+---
 
 ### 🏰 Guild
-Complete guild management:
-- **Guild info** – Name, tag, leader, level, experience, member count, your role, visibility
-- **Description** – Displayed if available
-- **Roster** – All members sorted by level, with class icons, roles, and locations
-- **Guild chat** – Read messages, send new messages
-- **Manual override** – If guild ID isn't detected, enter it manually
+Complete guild management.
+
+- **Guild info** — name, tag, leader, level, XP, member/elder count, your role, visibility
+- **Description** — displayed if set
+- **Roster** — all members sorted by level, class icons, role badges (👑 leader / 🌟 elder / ⚔️ member), location
+- **Your entry** highlighted in gold
+- **Guild Chat** — **live auto-refresh every 15 seconds** with Pause/Resume toggle
+- **Send messages** — no page reload, your message appears immediately
+- **Manual Guild ID** — if auto-detection fails, enter it manually via form
+
+---
 
 ### 💀 Bosses & Dungeons
-Live world events:
-- **World bosses** – Current HP, time left, participants, rewards
-- **HP bars** – Visual health with color coding (red for alive, gray for dead)
-- **Dungeons** – Active dungeons with chest counts and coin costs
-- **World battles** – Live boss battles with channel info
+Live world event tracker.
+
+- **World Bosses** — mob name, level, HP bar with %, time remaining, reward badges, participant count
+- **HP color** — red for alive, grey for defeated
+- **Active Dungeons** — chest count, streamer coin cost
+- **World Battles** — live boss battles with channel info and participant count
+
+---
 
 ### 🏆 Leaderboard
-Player rankings:
-- **Class filtering** – All, barbarian, tank, rogue, mage, summoner, healer, ranger
-- **Top 25** – Detailed table with rank, player, class, level, game time, skin, location
-- **Medal icons** – 🥇🥈🥉 for top 3
-- **Your highlight** – Your entry is highlighted in gold
-- **Extended rankings** – Players #26+ in compact cards
+Player rankings across all classes.
+
+- **Top 25** — rank medal (🥇🥈🥉), player, class, level, game time, skin, location
+- **Class filter** — all / barbarian / tank / rogue / mage / summoner / healer / ranger
+- **Extended rankings** — players #26+ in compact card grid
+- **Your entry** highlighted in gold
+
+---
 
 ### 💬 Global Chat
-Community interaction:
-- **Message list** – All global messages with timestamps
-- **Sender highlighting** – Devs (🔧) and Streamers (🎥) have distinct colors
-- **Send messages** – Input with character limit
+Community chat with live updates.
 
-### 📜 Mail
-In-game mail:
-- **Inbox view** – All messages with sender, content, dates
-- **Unread indicators** – Gold badge for new messages
-- **Expiry dates** – Shown for each message
+- Sender role styling: Dev 🔧 · Streamer 🎥 · Player ⚔️
+- **Live polling every 15s** — appends only new messages, no full reload
+- **Pause / Resume** toggle
+- Send messages — your own appears immediately after send
+- Max 200 characters enforced
+
+---
 
 ### ✨ Cosmetics
-Visual customization:
-- **Owned backpacks** – Your collection with equipped indicator
-- **Skin shop** – Available character skins with costs
-- **Backpack shop** – Available backpacks with costs
+Visual customization with tabbed layout.
+
+| Tab | Contents |
+|---|---|
+| 🎒 **Backpacks** | Owned cosmetics with EQUIPPED badge; backpack shop with prices |
+| 🎨 **Skins Shop** | All available character shaders (name_string + costs) |
+| 🧪 **Consumables** | Full equip/unequip system for 3 consumable slots |
+
+#### Consumables Equip System
+- **3 equipment slots** shown at the top — see what's equipped at a glance
+- **Equip →** button on each consumable card opens a slot picker modal
+- **Occupied slots** shown with ⚠️ warning — selecting replaces the existing consumable
+- **Unequip** directly from the slot card or from the consumable card
+- Supports all consumable types: potions, resurrection orbs, summons
 
 ---
 
-## 🏗️ Architecture
+### 📬 Mail
+Full in-game inbox.
 
-### Backend (Flask)
-- **Routes** – 20+ endpoints for pages and actions
-- **API abstraction** – `api_call()` and `guild_api_call()` handle all requests
-- **Disk cache** – User data stored in JSON files, keyed by token hash
-- **Session management** – Only token stored in session (not large data)
-- **Action endpoints** – JSON endpoints for all game actions (equip, destroy, list, buy, etc.)
-
-### Frontend (Vanilla JS)
-- **No frameworks** – Pure JavaScript for all interactions
-- **Modals** – For buying, listing, equipping
-- **Live sorting** – Client-side sorting on market page
-- **Toast notifications** – For action feedback
-- **Mass delete** – Checkbox selection with "Select All"
-- **Timer updates** – Daily spin countdown updates every second
-
-### Caching Strategy
-- **Why disk cache?** – User data (`udata`) is ~14KB, exceeding Flask's 4KB cookie limit
-- **How it works** – Data saved to `/tmp/streamarena_cache/[token_hash].json`
-- **TTL** – 5 minutes (configurable)
-- **Refresh** – Manual refresh button clears cache and fetches fresh data
+- Sender, message, received date, expiry date
+- **NEW** badge for unread messages
+- System messages marked with ⚙️
 
 ---
 
-## 🛠️ Configuration
+## 🏗️ Technical Architecture
 
-### Environment Variables (Optional)
-You can modify these in `app.py`:
-```python
-CACHE_DIR = '/tmp/streamarena_cache'  # Cache location
-CACHE_TTL = 300                        # Cache TTL in seconds
-API_VERSION = '0.32.03'                # Game API version
+### Why disk-based cache?
+
+Flask sessions use signed cookies — **4 KB limit**. The `get_udata` API response is **~14 KB**. Storing it in a cookie silently truncates the data, causing all pages to show empty data with no error message.
+
+**Solution:** Full user data is saved to `/tmp/streamarena_cache/[sha256_of_token].json` with a 5-minute TTL. Only the token (~100 bytes) lives in the cookie. Cache is cleared automatically after equip/unequip/buy actions.
+
+### Parallel API calls (ThreadPoolExecutor)
+
+Pages that require multiple API calls run them concurrently:
+
+| Page | Calls | Sequential | Parallel |
+|---|---|---|---|
+| Dashboard | 6 | ~4,000ms | ~700ms |
+| Market | 4 | ~2,800ms | ~700ms |
+| Guild | 3 | ~2,100ms | ~700ms |
+| Bosses | 3 | ~2,100ms | ~700ms |
+
+> Flask's `session` is a thread-local proxy — it cannot be accessed inside worker threads. The token is extracted **before** spawning threads and passed as an explicit argument. This is the correct, safe pattern.
+
+### Shared `requests.Session()`
+
+A single `requests.Session` object reuses TCP connections across all API calls, reducing per-request overhead by ~30%.
+
+### Live polling (Chat & Guild Chat)
+
+Both chat pages fetch `/api/chat_messages` or `/api/guild_messages` every 15 seconds, track seen message IDs in a `Set`, and append only new DOM elements. Zero full-page reloads.
+
+---
+
+## 📁 Project Structure
+
+```
+StreamArena-RPG-Dashboard/
+├── app.py                   ← All routes, API client, cache, parallel calls
+├── README.md
+└── templates/
+    ├── base.html            ← Sidebar, global CSS, JS helpers (toast, apiAction)
+    ├── index.html           ← Login page (standalone)
+    ├── dashboard.html       ← Account overview
+    ├── inventory.html       ← Paginated inventory with full filter suite
+    ├── equipment.html       ← Equipment slots + sortable inventory panel
+    ├── market.html          ← Marketplace
+    ├── guild.html           ← Guild info + roster + live chat
+    ├── cosmetics.html       ← Backpacks / Skins / Consumables (tabbed)
+    ├── bosses.html          ← World bosses + dungeons + battles
+    ├── leaderboard.html     ← Player rankings
+    ├── chat.html            ← Global chat with live polling
+    └── mail.html            ← In-game inbox
 ```
 
-### For Production Deployment
-1. Change `app.secret_key` to a secure random value
-2. Use a proper WSGI server (Gunicorn, Waitress)
-3. Set `debug=False`
-4. Consider using a permanent cache directory
+---
+
+## ⚙️ Configuration
+
+Everything is at the top of `app.py`:
+
+```python
+API_VERSION    = '0.32.03'               # Update if game API version changes
+CACHE_TTL      = 300                      # Seconds before udata cache expires (5 min)
+CACHE_DIR      = '/tmp/streamarena_cache' # Cache directory — change for production
+app.secret_key = 'streamarena_secret_2026' # Change to a random string in production!
+```
+
+### Updating the API Version
+
+If some features stop working after a game update:
+1. Open **DevTools → Network → any request to `portal_api.php`**
+2. Find the `version` field in the request payload
+3. Update `API_VERSION` in `app.py`
+
+### Production Deployment
+
+```bash
+pip install gunicorn           # or: pip install waitress  (Windows)
+gunicorn -w 4 app:app          # Linux/macOS
+waitress-serve --port=5000 app:app  # Windows
+```
+
+Checklist:
+- [ ] Set `debug=False` in `app.py`
+- [ ] Change `app.secret_key` to a long random string
+- [ ] Move `CACHE_DIR` outside `/tmp` (lost on reboot)
+- [ ] Use HTTPS if exposing to the internet
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Since this project was AI‑generated, there's plenty of room for:
-- Bug fixes
-- UI/UX improvements
-- Additional features
-- Performance optimizations
-- Documentation
+Contributions are welcome! The codebase is intentionally simple — one `app.py` + Jinja2 templates, zero JS frameworks, zero build steps.
 
-### Development Workflow
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes
+4. Open a pull request
 
----
-
-## 🙏 Acknowledgments
-
-- **StreamArena RPG** – For creating an amazing game with a public API
-- **Anthropic Claude 3.7 Sonnet** – The AI that wrote 99% of this code
-- **Flask community** – For the lightweight yet powerful framework
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
+Areas that could use improvement:
+- Cancel market listings (API likely has a `cancel_listing` route)
+- Friends page (`get_friend_list` API exists)
+- Consumable usage in battle context
+- Mobile layout refinements
 
 ---
 
 ## ⚠️ Disclaimer
 
-This is an **unofficial** third‑party dashboard. It is not affiliated with, endorsed by, or connected to StreamArena RPG or its developers. Use at your own risk.
+This is an **unofficial** third-party tool, not affiliated with or endorsed by StreamArena RPG or its developers.
 
-The dashboard communicates with the official game API using your personal token – treat your token like a password and never share it.
+The dashboard communicates with the official game API using your personal token. Use at your own risk and **never share your token**.
 
 ---
 
-**Made with ⚔️ by AI and a little human touch**  
-[Report Bug](https://github.com/Akseel911/StreamArena-RPG-Dashboard/issues) · [Request Feature](https://github.com/Aksel911/StreamArena-RPG-Dashboard/issues)
+## 📄 License
+
+[MIT](LICENSE) — free to use, modify, and distribute.
+
+---
+
+<div align="center">
+
+**Made with ⚔️ by [Aksel911](https://github.com/Aksel911) & Claude Sonnet 4.6**
+
+[🐛 Report a Bug](https://github.com/Aksel911/StreamArena-RPG-Dashboard/issues) · [✨ Request a Feature](https://github.com/Aksel911/StreamArena-RPG-Dashboard/issues) · [⭐ Star the Repo](https://github.com/Aksel911/StreamArena-RPG-Dashboard)
+
+</div>

@@ -5,149 +5,156 @@
 <div class="page-header">
   <div>
     <div class="page-title">🎒 Inventory</div>
-    <div class="page-subtitle">{{ items|length }} items on this page</div>
+    <div class="page-subtitle" id="inv-subtitle">{{ items|length }} items on this page</div>
   </div>
 </div>
 
-{# Slot filter #}
+{# ── Slot filter tabs ───────────────────────────────────────────── #}
 <div class="filters">
   <span style="font-size:0.8rem;color:var(--text3);">Slot:</span>
   <div class="filter-group">
     {% set slots = ['all','weapon','off_hand','head','body','hands','feet','ring','neck'] %}
     {% set cur_slot = request.args.get('slot','all') %}
     {% for s in slots %}
-    <a href="{{ url_for('inventory', slot=s, page=1, sort=request.args.get('sort','power'), order=request.args.get('order','desc')) }}" class="filter-btn {% if cur_slot==s %}active{% endif %}">
+    <a href="{{ url_for('inventory', slot=s, page=1, sort=request.args.get('sort','power'), order=request.args.get('order','desc')) }}"
+       class="filter-btn {% if cur_slot==s %}active{% endif %}">
       {{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}
     </a>
     {% endfor %}
   </div>
 </div>
 
-{# Sorting controls #}
-<div class="filters" style="margin-top: 8px;">
-  <span style="font-size:0.8rem;color:var(--text3);">Sort by:</span>
+{# ── Sort controls + Class dropdown ────────────────────────────── #}
+<div class="filters" style="margin-top:8px;gap:10px;flex-wrap:wrap;align-items:center;">
+  <span style="font-size:0.8rem;color:var(--text3);">Sort:</span>
   <div class="filter-group">
-    {% set sort_by = request.args.get('sort', 'power') %}
-    {% set order = request.args.get('order', 'desc') %}
-
-    {# Power descending #}
+    {% set sort_by = request.args.get('sort','power') %}
+    {% set order   = request.args.get('order','desc') %}
     <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='power', order='desc') }}"
-       class="filter-btn {% if sort_by == 'power' and order == 'desc' %}active{% endif %}">
-      ✨ Power ↓
-    </a>
-
-    {# Power ascending #}
+       class="filter-btn {% if sort_by=='power' and order=='desc' %}active{% endif %}">✨ Power ↓</a>
     <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='power', order='asc') }}"
-       class="filter-btn {% if sort_by == 'power' and order == 'asc' %}active{% endif %}">
-      ✨ Power ↑
-    </a>
-
-    {# Name A-Z #}
+       class="filter-btn {% if sort_by=='power' and order=='asc' %}active{% endif %}">✨ Power ↑</a>
     <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='name', order='asc') }}"
-       class="filter-btn {% if sort_by == 'name' and order == 'asc' %}active{% endif %}">
-      📛 Name A-Z
-    </a>
-
-    {# Name Z-A #}
+       class="filter-btn {% if sort_by=='name' and order=='asc' %}active{% endif %}">📛 Name A-Z</a>
     <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='name', order='desc') }}"
-       class="filter-btn {% if sort_by == 'name' and order == 'desc' %}active{% endif %}">
-      📛 Name Z-A
-    </a>
+       class="filter-btn {% if sort_by=='name' and order=='desc' %}active{% endif %}">📛 Name Z-A</a>
+  </div>
 
-    {# Class A-Z #}
-    <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='class', order='asc') }}"
-       class="filter-btn {% if sort_by == 'class' and order == 'asc' %}active{% endif %}">
-      🏷️ Class A-Z
-    </a>
+  {# Class dropdown — JS-based client-side filter #}
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="font-size:0.8rem;color:var(--text3);">Class:</span>
+    <select id="class-filter-select"
+            style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);
+                   border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;">
+      <option value="all">All Classes</option>
+      {% set all_classes = [] %}
+      {% for item in items %}
+        {% for cls in item.get('classes',[]) %}
+          {% if cls not in all_classes %}{% set _ = all_classes.append(cls) %}{% endif %}
+        {% endfor %}
+      {% endfor %}
+      {% for cls in all_classes|sort %}
+      <option value="{{ cls }}">{{ class_icons.get(cls,'') }} {{ cls|title }}</option>
+      {% endfor %}
+    </select>
+  </div>
 
-    {# Class Z-A #}
-    <a href="{{ url_for('inventory', slot=cur_slot, page=1, sort='class', order='desc') }}"
-       class="filter-btn {% if sort_by == 'class' and order == 'desc' %}active{% endif %}">
-      🏷️ Class Z-A
-    </a>
+  {# Search #}
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+    <input type="text" id="inv-search" placeholder="🔍 Search items..."
+           style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
+                  border-radius:5px;padding:6px 12px;font-size:0.82rem;width:200px;"
+           oninput="applyFilters()">
   </div>
 </div>
 
-{# === Mass Delete Controls (обновлено) === #}
-<div style="display: flex; align-items: center; gap: 20px; margin: 16px 0; flex-wrap: wrap;">
-  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-    <input type="checkbox" id="select-all" style="width: 18px; height: 18px; accent-color: var(--gold2);"> 
-    <span style="color: var(--text2);">Select All</span>
+{# ── Visibility toggles ─────────────────────────────────────────── #}
+<div style="display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;align-items:center;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text2);">
+    <input type="checkbox" id="toggle-equipped" style="accent-color:var(--teal2);width:16px;height:16px;">
+    <span>🟢 Show Equipped</span>
   </label>
-  <span id="selected-counter" style="color: var(--text2); font-size: 0.9rem; background: var(--bg3); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);">
-    Selected items: 0
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text2);">
+    <input type="checkbox" id="toggle-listed" style="accent-color:var(--gold);width:16px;height:16px;">
+    <span>💰 Show Listed</span>
+  </label>
+  <span id="inv-count" style="font-size:0.8rem;color:var(--text3);margin-left:auto;"></span>
+</div>
+
+{# ── Mass delete controls ───────────────────────────────────────── #}
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+    <input type="checkbox" id="select-all" style="width:18px;height:18px;accent-color:var(--gold2);">
+    <span style="color:var(--text2);font-size:0.88rem;">Select All</span>
+  </label>
+  <span id="selected-counter" style="color:var(--text2);font-size:0.88rem;background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">
+    Selected: 0
   </span>
-  <button id="delete-selected" class="btn-sm btn-danger" disabled 
-          style="background: rgba(200,70,70,0.2); border-color: rgba(200,70,70,0.5); color: #ff8a8a; padding: 6px 14px; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+  <button id="delete-selected" class="btn-sm btn-danger" disabled
+          style="display:flex;align-items:center;gap:6px;padding:6px 14px;">
     🗑️ Delete Selected
   </button>
 </div>
 
+{# ── Sort items ─────────────────────────────────────────────────── #}
 {% set cur_slot = request.args.get('slot','all') %}
+{% set sort_by  = request.args.get('sort','power') %}
+{% set order    = request.args.get('order','desc') %}
 {% set filtered = items if cur_slot == 'all' else items|selectattr('slot','equalto',cur_slot)|list %}
-
-{# Apply sorting #}
-{% set sort_by = request.args.get('sort', 'power') %}
-{% set order = request.args.get('order', 'desc') %}
 {% if sort_by == 'power' %}
-    {% set filtered = filtered|sort(attribute='power', reverse=(order == 'desc')) %}
+  {% set filtered = filtered|sort(attribute='power', reverse=(order=='desc')) %}
 {% elif sort_by == 'name' %}
-    {% set filtered = filtered|sort(attribute='item_name', reverse=(order == 'desc')) %}
-{% elif sort_by == 'class' %}
-    {% set filtered = filtered|sort(attribute='classes', reverse=(order == 'desc')) %}
+  {% set filtered = filtered|sort(attribute='item_name', reverse=(order=='desc')) %}
 {% endif %}
 
+{# ── Items grid ─────────────────────────────────────────────────── #}
 {% if filtered %}
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;">
+<div id="inv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;">
   {% for item in filtered %}
-  {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
-  {% set ep = item.get('extra_parsed', {}) %}
-  <div class="item-card {% if item.get('is_locked') %}locked{% endif %}" style="position: relative;">
-    {# Кастомный чекбокс для массового удаления – только если не заблокирован #}
-    {% if not item.get('is_locked') %}
-    <label class="custom-checkbox" style="position: absolute; left: 190px; z-index: 2; cursor: pointer;">
-      <input type="checkbox" class="item-select" value="{{ item.get('id') }}" style="display: none;">
+  {% set power_pct  = (item.get('power',0)|float * 100)|round(2) %}
+  {% set ep         = item.get('extra_parsed', {}) %}
+  {% set is_eq      = item.get('is_equipped', false) %}
+  {% set is_listed  = item.get('is_listed', false) %}
+  <div class="item-card {% if item.get('is_locked') %}locked{% endif %}"
+       style="position:relative;{% if is_eq %}border-color:var(--teal2) !important;{% endif %}"
+       data-slot="{{ item.get('slot','') }}"
+       data-classes="{{ item.get('classes',[])|join(',') }}"
+       data-name="{{ item.get('item_name','') }}"
+       data-equipped="{{ 'true' if is_eq else 'false' }}"
+       data-listed="{{ 'true' if is_listed else 'false' }}">
+
+    {# Checkbox — only for unlisted, unlocked items #}
+    {% if not item.get('is_locked') and not is_listed %}
+    <label class="custom-checkbox" style="position:absolute;right:8px;top:8px;z-index:2;cursor:pointer;">
+      <input type="checkbox" class="item-select" value="{{ item.get('id') }}" style="display:none;">
       <span class="checkmark"></span>
     </label>
     {% endif %}
+
     {% if item.get('is_locked') %}<span class="lock-icon">🔒</span>{% endif %}
-    <div class="item-header"> {# увеличен отступ для чекбокса #}
-      <div class="item-slot-badge">{{ slot_icons.get(item.get('slot',''), '❓') }}</div>
+
+    <div class="item-header">
+      <div class="item-slot-badge">{{ slot_icons.get(item.get('slot',''),'❓') }}</div>
       <div style="min-width:0;">
         <div class="item-name">
-          {% if my_listings %}
-            {% if my_listings.listings is defined %}
-              {% set listings = my_listings.listings %}
-            {% else %}
-              {% set listings = my_listings %}
-            {% endif %}
-            {% if item.id in listings|map(attribute='id') %}
-              <span style="color: green;">💰[$$$] </span>
-            {% endif %}
-          {% endif %}
+          {% if is_eq %}<span style="color:var(--teal2);">🟢[Equipped] </span>{% endif %}
+          {% if is_listed %}<span style="color:#d4a030;">💰[$$$] </span>{% endif %}
           {{ item.get('item_name','?') }}
         </div>
         <div class="item-id">#{{ item.get('id') }}</div>
       </div>
     </div>
+
     <div class="power-bar-wrap">
       <div class="power-bar-label">
-        {% if item.get('slot') == 'weapon' %}
-            <span>✨ Damage</span>
-        {% elif item.get('slot') == 'off_hand' %}
-            <span>✨ Armor</span>
-        {% elif item.get('slot') == 'head' %}
-            <span>✨ HP</span>
-        {% elif item.get('slot') == 'body' %}
-            <span>✨ HP</span>
-        {% elif item.get('slot') == 'hands' %}
-            <span>✨ A. Speed</span>
-        {% elif item.get('slot') == 'feet' %}
-            <span>✨ M. Speed</span>
-        {% elif item.get('slot') == 'ring' %}
-            <span>✨ Ring Bonus</span>
-        {% elif item.get('slot') == 'neck' %}
-            <span>✨ Neck Bonus</span>
+        {% if item.get('slot') == 'weapon' %}<span>✨ Damage</span>
+        {% elif item.get('slot') == 'off_hand' %}<span>✨ Armor</span>
+        {% elif item.get('slot') == 'head' %}<span>✨ HP</span>
+        {% elif item.get('slot') == 'body' %}<span>✨ HP</span>
+        {% elif item.get('slot') == 'hands' %}<span>✨ A. Speed</span>
+        {% elif item.get('slot') == 'feet' %}<span>✨ M. Speed</span>
+        {% elif item.get('slot') == 'ring' %}<span>✨ Ring Bonus</span>
+        {% elif item.get('slot') == 'neck' %}<span>✨ Neck Bonus</span>
         {% endif %}
         <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
           {{ "%.2f"|format(power_pct) }}%
@@ -161,21 +168,28 @@
           {% else %}linear-gradient(90deg,var(--teal),var(--teal2)){% endif %}"></div>
       </div>
     </div>
+
     {% if ep.get('extra') %}<span class="item-extra">✦ {{ ep.get('extra') }}</span>{% endif %}
     {% if ep.get('range') %}<span class="item-extra" style="color:var(--blue2);">🎯 Range {{ ep.get('range') }}</span>{% endif %}
+
     <div class="item-classes">
-      {% for cls in item.get('classes', []) %}
+      {% for cls in item.get('classes',[]) %}
       <span class="class-tag">{{ class_icons.get(cls,'') }} {{ cls }}</span>
       {% endfor %}
     </div>
+
     <div class="item-actions">
       {% if item.get('is_locked') %}
       <button class="btn-sm btn-lock" onclick="toggleLock({{ item.get('id') }}, false)">🔓 Unlock</button>
       {% else %}
       <button class="btn-sm btn-lock" onclick="toggleLock({{ item.get('id') }}, true)">🔒 Lock</button>
+      {% if not is_listed %}
       <button class="btn-sm" style="background:rgba(85,128,216,0.15);border:1px solid rgba(85,128,216,0.35);color:var(--blue2);border-radius:4px;font-size:0.72rem;padding:4px 8px;cursor:pointer;"
               onclick="openListModal({{ item.get('id') }}, '{{ item.get('item_name','?')|replace("'","") }}')">⚖️ Market</button>
       <button class="btn-sm btn-danger" onclick="destroyItem({{ item.get('id') }}, '{{ item.get('item_name','?')|replace("'","") }}')">🗑️</button>
+      {% else %}
+      <span style="font-size:0.7rem;color:#d4a030;padding:4px 8px;">On market</span>
+      {% endif %}
       {% endif %}
     </div>
   </div>
@@ -195,51 +209,41 @@
 <div class="empty-state"><div class="icon">🎒</div><p>No items{{ ' in this slot' if cur_slot != 'all' else '' }}.</p></div>
 {% endif %}
 
-{# ── List Item Modal (без изменений) ───────────────────────────────── #}
+{# ── List Item Modal ─────────────────────────────────────────────── #}
 <div id="list-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;min-width:340px;max-width:440px;width:90%;">
     <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);margin-bottom:4px;">⚖️ List on Market</div>
     <div style="font-size:0.82rem;color:var(--text3);margin-bottom:18px;" id="list-modal-name">—</div>
-
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
       <div>
-        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;letter-spacing:0.05em;">🥇 GOLD</label>
+        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;">🥇 GOLD</label>
         <input type="number" id="list-gold" min="0" value="0" style="width:100%;" oninput="calcFee()">
       </div>
       <div>
-        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;letter-spacing:0.05em;">💎 PLATINUM</label>
+        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;">💎 PLATINUM</label>
         <input type="number" id="list-plat" min="0" value="0" style="width:100%;" oninput="calcFee()">
       </div>
       <div>
-        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;letter-spacing:0.05em;">💠 GEMS</label>
+        <label style="display:block;font-size:0.75rem;color:var(--text3);margin-bottom:4px;">💠 GEMS</label>
         <input type="number" id="list-gems" min="0" value="0" style="width:100%;" oninput="calcFee()">
       </div>
     </div>
-
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;">
       <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">📋 Fee Breakdown</div>
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
-        <span style="color:var(--text2);">Gold fee (10%)</span>
-        <span id="fee-gold" style="color:var(--gold2);">0 🥇</span>
+        <span style="color:var(--text2);">Gold fee (10%)</span><span id="fee-gold" style="color:var(--gold2);">0 🥇</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;">
-        <span style="color:var(--text2);">Plat fee (×100,000)</span>
-        <span id="fee-plat" style="color:var(--gold2);">0 🥇</span>
+        <span style="color:var(--text2);">Plat fee (×100,000)</span><span id="fee-plat" style="color:var(--gold2);">0 🥇</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:8px;">
-        <span style="color:var(--text2);">Gem fee</span>
-        <span style="color:var(--teal2);">No fee 💠</span>
+        <span style="color:var(--text2);">Gem fee</span><span style="color:var(--teal2);">No fee 💠</span>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between;font-size:0.9rem;font-weight:700;">
-        <span>Total Fee</span>
-        <span id="fee-total" style="color:var(--red2);">0 🥇</span>
+        <span>Total Fee</span><span id="fee-total" style="color:var(--red2);">0 🥇</span>
       </div>
     </div>
-
-    <div style="font-size:0.72rem;color:var(--text3);margin-bottom:14px;">
-      Formula: gold×0.1 + platinum×100,000 gold. Gems are free to list.
-    </div>
-
+    <div style="font-size:0.72rem;color:var(--text3);margin-bottom:14px;">Formula: gold×0.1 + platinum×100,000 gold. Gems are free to list.</div>
     <div style="display:flex;gap:8px;">
       <button class="btn-primary" style="flex:1;" onclick="confirmList()">📤 List Item</button>
       <button style="flex:1;background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:8px;cursor:pointer;" onclick="closeListModal()">Cancel</button>
@@ -247,77 +251,11 @@
   </div>
 </div>
 
-<style>
-/* === Кастомные чекбоксы === */
-.custom-checkbox {
-  display: inline-block;
-  position: relative;
-  width: 22px;
-  height: 22px;
-  user-select: none;
-}
-
-.custom-checkbox .checkmark {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 22px;
-  height: 22px;
-  background-color: var(--bg3);
-  border: 2px solid var(--border);
-  border-radius: 5px;
-  transition: all 0.2s;
-}
-
-.custom-checkbox input:checked ~ .checkmark {
-  background-color: var(--gold2);
-  border-color: var(--gold2);
-}
-
-.custom-checkbox .checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 7px;
-  top: 3px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.custom-checkbox input:checked ~ .checkmark:after {
-  display: block;
-}
-
-/* Адаптация для locked карточек */
-.item-card.locked .custom-checkbox {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-/* Стиль для счетчика */
-#selected-counter {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: var(--text2);
-}
-
-/* Кнопка удаления (уже есть класс btn-danger, но добавим состояние disabled) */
-#delete-selected:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-</style>
 
 <script>
 let listItemId = null;
 
-// Функции для модалки (оставлены без изменений)
+// ── List modal ────────────────────────────────────────────────────────────────
 function openListModal(id, name) {
   listItemId = id;
   document.getElementById('list-modal-name').textContent = `#${id} — ${name}`;
@@ -327,12 +265,10 @@ function openListModal(id, name) {
   calcFee();
   document.getElementById('list-modal').style.display = 'flex';
 }
-
 function closeListModal() {
   document.getElementById('list-modal').style.display = 'none';
   listItemId = null;
 }
-
 function calcFee() {
   const gold = parseInt(document.getElementById('list-gold').value) || 0;
   const plat = parseInt(document.getElementById('list-plat').value) || 0;
@@ -343,16 +279,13 @@ function calcFee() {
   document.getElementById('fee-plat').textContent  = feePlat.toLocaleString() + ' 🥇';
   document.getElementById('fee-total').textContent = total.toLocaleString() + ' 🥇';
 }
-
 async function confirmList() {
   if (!listItemId) return;
   const gold = parseInt(document.getElementById('list-gold').value) || 0;
   const plat = parseInt(document.getElementById('list-plat').value) || 0;
   const gems = parseInt(document.getElementById('list-gems').value) || 0;
   if (gold === 0 && plat === 0 && gems === 0) { toast('❌ Set at least one price!', false); return; }
-  const res = await apiAction('/action/list_item', {
-    item_id: listItemId, gold_cost: gold, platinum_cost: plat, gem_cost: gems
-  });
+  const res = await apiAction('/action/list_item', {item_id:listItemId, gold_cost:gold, platinum_cost:plat, gem_cost:gems});
   if (res.status === 'success') {
     toast('✅ Item listed on market!');
     closeListModal();
@@ -361,87 +294,101 @@ async function confirmList() {
     toast('❌ ' + (res.message || res.error || 'Failed to list'), false);
   }
 }
+document.getElementById('list-modal').addEventListener('click', function(e) { if (e.target === this) closeListModal(); });
 
-document.getElementById('list-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeListModal();
-});
+// ── Client-side filter engine ─────────────────────────────────────────────────
+const classSelect   = document.getElementById('class-filter-select');
+const searchInput   = document.getElementById('inv-search');
+const toggleEq      = document.getElementById('toggle-equipped');  // checkbox — show equipped
+const toggleListed  = document.getElementById('toggle-listed');    // checkbox — show listed
+const countEl       = document.getElementById('inv-count');
+const allCards      = Array.from(document.querySelectorAll('#inv-grid .item-card'));
 
-// ========== Mass Delete Logic (обновлено) ==========
-const selectAllCheckbox = document.getElementById('select-all');
-const deleteSelectedBtn = document.getElementById('delete-selected');
-const selectedCounterSpan = document.getElementById('selected-counter');
+function applyFilters() {
+  const cls       = classSelect.value;
+  const query     = searchInput.value.trim().toLowerCase();
+  const showEq    = toggleEq.checked;
+  const showList  = toggleListed.checked;
 
-// Получаем все видимые чекбоксы (не заблокированные)
-function getItemCheckboxes() {
-  return document.querySelectorAll('.item-select:not(:disabled)');
+  let visible = 0;
+  allCards.forEach(card => {
+    const isEquipped = card.dataset.equipped === 'true';
+    const isListed   = card.dataset.listed   === 'true';
+    const classes    = card.dataset.classes.split(',');
+    const name       = card.dataset.name.toLowerCase();
+
+    // Visibility rules
+    if (!showEq   && isEquipped) { card.style.display = 'none'; return; }
+    if (!showList  && isListed)  { card.style.display = 'none'; return; }
+    if (cls !== 'all' && !classes.includes(cls)) { card.style.display = 'none'; return; }
+    if (query && !name.includes(query)) { card.style.display = 'none'; return; }
+
+    card.style.display = '';
+    visible++;
+  });
+
+  countEl.textContent = `Showing: ${visible} of ${allCards.length}`;
+  updateSelectionUI();
 }
 
-// Обновление счетчика и кнопки
+classSelect.addEventListener('change', applyFilters);
+toggleEq.addEventListener('change', applyFilters);
+toggleListed.addEventListener('change', applyFilters);
+
+// ── Mass delete ───────────────────────────────────────────────────────────────
+const selectAllCb  = document.getElementById('select-all');
+const deleteBtn    = document.getElementById('delete-selected');
+const counterSpan  = document.getElementById('selected-counter');
+
+function getVisibleCheckboxes() {
+  return Array.from(document.querySelectorAll('.item-select')).filter(cb => {
+    return cb.closest('.item-card').style.display !== 'none';
+  });
+}
 function updateSelectionUI() {
-  const checkboxes = getItemCheckboxes();
-  const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
-  selectedCounterSpan.textContent = `Selected items: ${checkedCount}`;
-  deleteSelectedBtn.disabled = checkedCount === 0;
-  
-  // Обновляем состояние "Select All"
-  if (checkboxes.length > 0) {
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    selectAllCheckbox.checked = allChecked;
-    selectAllCheckbox.indeterminate = !allChecked && checkedCount > 0;
-  } else {
-    selectAllCheckbox.checked = false;
-    selectAllCheckbox.indeterminate = false;
-  }
+  const cbs   = getVisibleCheckboxes();
+  const count = cbs.filter(c => c.checked).length;
+  counterSpan.textContent        = `Selected: ${count}`;
+  deleteBtn.disabled             = count === 0;
+  selectAllCb.checked            = cbs.length > 0 && cbs.every(c => c.checked);
+  selectAllCb.indeterminate      = count > 0 && count < cbs.length;
 }
+document.querySelectorAll('.item-select').forEach(cb => cb.addEventListener('change', updateSelectionUI));
 
-// Обработчики для чекбоксов
-document.querySelectorAll('.item-select').forEach(cb => {
-  cb.addEventListener('change', updateSelectionUI);
-});
-
-// Select All
-selectAllCheckbox.addEventListener('change', function(e) {
-  const checked = e.target.checked;
-  getItemCheckboxes().forEach(cb => cb.checked = checked);
+selectAllCb.addEventListener('change', function() {
+  getVisibleCheckboxes().forEach(cb => cb.checked = this.checked);
   updateSelectionUI();
 });
 
-// Удаление выбранных
-deleteSelectedBtn.addEventListener('click', async function() {
-  const selectedIds = Array.from(getItemCheckboxes())
-    .filter(cb => cb.checked)
-    .map(cb => cb.value);
+deleteBtn.addEventListener('click', async function() {
+  const ids = getVisibleCheckboxes().filter(c => c.checked).map(c => c.value);
+  if (!ids.length) return;
+  const label = ids.length === 1 ? 'this item' : `these ${ids.length} items`;
+  if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
 
-  if (selectedIds.length === 0) return;
-
-  const itemNames = selectedIds.length === 1 ? 'this item' : 'these ' + selectedIds.length + ' items';
-  if (!confirm(`Are you sure you want to delete ${itemNames}? This action cannot be undone.`)) return;
-
-  // Блокируем кнопку на время запроса
-  deleteSelectedBtn.disabled = true;
-  deleteSelectedBtn.textContent = '⏳ Deleting...';
-
+  deleteBtn.disabled    = true;
+  deleteBtn.textContent = '⏳ Deleting...';
   try {
-    const res = await apiAction('/action/destroy_items', { item_ids: selectedIds });
+    const res = await apiAction('/action/destroy_items', {item_ids: ids});
     if (res.status === 'success') {
-      toast(`✅ Successfully deleted ${res.deleted_count || selectedIds.length} item(s).`);
+      toast(`✅ Deleted ${res.deleted_count || ids.length} item(s).`);
       location.reload();
     } else if (res.status === 'partial') {
-      toast(`⚠️ Deleted ${res.deleted_count} item(s), but some failed.`, false);
+      toast(`⚠️ Deleted ${res.deleted_count}, some failed.`, false);
       location.reload();
     } else {
-      toast('❌ ' + (res.message || res.error || 'Failed to delete items'), false);
-      deleteSelectedBtn.disabled = false;
-      deleteSelectedBtn.textContent = '🗑️ Delete Selected';
+      toast('❌ ' + (res.message || res.error || 'Delete failed'), false);
+      deleteBtn.disabled    = false;
+      deleteBtn.textContent = '🗑️ Delete Selected';
     }
-  } catch (err) {
+  } catch {
     toast('❌ Network error', false);
-    deleteSelectedBtn.disabled = false;
-    deleteSelectedBtn.textContent = '🗑️ Delete Selected';
+    deleteBtn.disabled    = false;
+    deleteBtn.textContent = '🗑️ Delete Selected';
   }
 });
 
-// Инициализация UI при загрузке
-updateSelectionUI();
+// ── Init ──────────────────────────────────────────────────────────────────────
+applyFilters();   // sets initial count + respects defaults (equipped/listed hidden)
 </script>
 {% endblock %}

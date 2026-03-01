@@ -201,7 +201,9 @@
       margin-bottom: 20px;
       box-shadow: var(--shadow);
       transition: border-color 0.2s;
+      display: grid;
     }
+    
     .card:hover { border-color: var(--border2); }
     .card-title {
       font-family: 'Cinzel', serif;
@@ -542,16 +544,16 @@
     .voucher-form { display: flex; gap: 8px; margin-top: 12px; }
     .voucher-form input { flex: 1; }
 
-    /* === Стили для ссылок (общие) === */
+    /* === Links Styles === */
     a {
-        color: var(--gold);                 /* Основной цвет — золотой */
-        text-decoration: none;               /* Убираем стандартное подчёркивание */
+        color: var(--gold);                 
+        text-decoration: none;               
         transition: color 0.2s ease, border-color 0.2s ease;
         font-weight: 500;
     }
 
     a:hover {
-        color: var(--gold3);                 /* При наведении — более светлый золотой */
+        color: var(--gold3);                 
     }
 
     .username-link {
@@ -563,6 +565,87 @@
     .username-link:hover {
         color: var(--gold3);
     }
+
+    /* === Cosmetics Styles=== */
+    .cosm-tab {
+      padding:10px 20px;
+      background:transparent;
+      border:none;
+      border-bottom:2px solid transparent;
+      color:var(--text3);
+      font-family:'Cinzel',serif;
+      font-size:0.82rem;
+      cursor:pointer;
+      transition:all .18s;
+      letter-spacing:0.05em;
+    }
+    .cosm-tab:hover { color:var(--text2); }
+    .cosm-tab.active { color:var(--gold2);border-bottom-color:var(--gold2); }
+    .btn-primary-sm {
+      background:linear-gradient(135deg,rgba(201,168,76,0.25),rgba(201,168,76,0.12));
+      border:1px solid var(--gold);
+      color:var(--gold2);
+      border-radius:5px;
+      padding:5px 10px;
+      font-family:'Cinzel',serif;
+      font-size:0.72rem;
+      cursor:pointer;
+      transition:all .15s;
+    }
+    .btn-primary-sm:hover { background:rgba(201,168,76,0.35); }
+    
+    .cons-slot-btn {
+        padding: 10px 6px;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text2);
+        cursor: pointer;
+        font-size: 0.78rem;
+        text-align: center;
+        transition: all 0.15s ease;
+    }
+
+    .cons-slot-btn:hover {
+      border-color:var(--gold2);
+      background:rgba(201,168,76,0.12);
+      color:var(--gold2);
+    }
+    .cons-slot-btn:active {
+        transform: scale(0.97);
+    }
+    .cons-slot-btn.selected {
+      border-color:var(--gold2);
+      background:rgba(201,168,76,0.12);
+      color:var(--gold2);
+    }
+
+    .btn-cancel {
+        flex: 1;
+        padding: 8px;
+        background: var(--bg4);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        color: var(--text2);
+        cursor: pointer;
+        font-size: inherit;
+        transition: all 0.15s ease;
+    }
+
+    .btn-cancel:hover {
+        background: var(--bg3);
+        border-color: var(--text2);
+    }
+
+
+    /* === Inventory Styles=== */
+    .custom-checkbox { display:inline-block;position:relative;width:22px;height:22px;user-select:none; }
+    .custom-checkbox .checkmark { position:absolute;top:0;left:0;width:22px;height:22px;background:var(--bg3);border:2px solid var(--border);border-radius:5px;transition:all .2s; }
+    .custom-checkbox input:checked ~ .checkmark { background:var(--gold2);border-color:var(--gold2); }
+    .custom-checkbox .checkmark:after { content:'';position:absolute;display:none;left:7px;top:3px;width:5px;height:10px;border:solid white;border-width:0 2px 2px 0;transform:rotate(45deg); }
+    .custom-checkbox input:checked ~ .checkmark:after { display:block; }
+    #delete-selected:disabled { opacity:0.4;cursor:not-allowed; }
+
 
     
   </style>

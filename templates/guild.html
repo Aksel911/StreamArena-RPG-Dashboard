@@ -57,21 +57,27 @@
 
     {# Guild Chat #}
     <div class="card">
-      <div class="card-title">💬 Guild Chat</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div class="card-title" style="margin-bottom:0;">💬 Guild Chat</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="guild-poll-indicator" style="font-size:0.72rem;color:var(--text3);">🔄 15s</span>
+          <button id="guild-poll-toggle" class="btn-sm" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;padding:3px 10px;font-size:0.72rem;cursor:pointer;">Pause</button>
+        </div>
+      </div>
       {% set msgs = messages.get('messages', []) %}
-      {% if msgs %}
       <div id="guild-chat-messages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
+        {% if msgs %}
         {% for m in msgs %}
-        <div class="chat-msg">
+        <div class="chat-msg" data-id="{{ m.get('id', loop.index) }}">
           <span class="chat-sender">{{ m.get('sender','?') }}</span>
           <div class="chat-text">{{ m.get('message','') }}</div>
           <div class="chat-time" data-ts="{{ m.get('time_created','') }}"></div>
         </div>
         {% endfor %}
+        {% else %}
+        <div id="guild-chat-empty" class="empty-state" style="padding:20px;"><div class="icon" style="font-size:1.5rem;">💬</div><p>No messages.</p></div>
+        {% endif %}
       </div>
-      {% else %}
-      <div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:1.5rem;">💬</div><p>No messages.</p></div>
-      {% endif %}
 
       {# Send guild message #}
       <div style="display:flex;gap:8px;margin-top:8px;">
@@ -128,19 +134,85 @@
 {% endif %}
 
 <script>
-// Timestamp format
+function fmtTs(ts) {
+  const t = parseInt(ts, 10);
+  return (!isNaN(t) && t > 0) ? new Date(t * 1000).toLocaleString() : '';
+}
+
+// Format timestamps on load
 document.querySelectorAll('.chat-time[data-ts]').forEach(el => {
-  const ts = parseInt(el.dataset.ts, 10);
-  if (!isNaN(ts) && ts > 0) el.textContent = new Date(ts * 1000).toLocaleString();
+  el.textContent = fmtTs(el.dataset.ts);
 });
 
-// Scroll guild chat to bottom
+// Scroll to bottom
 const gc = document.getElementById('guild-chat-messages');
 if (gc) gc.scrollTop = gc.scrollHeight;
 
+// Track known IDs
+const knownGuildIds = new Set(
+  Array.from(document.querySelectorAll('.chat-msg[data-id]')).map(el => el.dataset.id)
+);
+
+function buildGuildMsgEl(m) {
+  const div = document.createElement('div');
+  div.className  = 'chat-msg';
+  div.dataset.id = String(m.id ?? (Date.now() + Math.random()));
+  div.innerHTML  = `
+    <span class="chat-sender">${m.sender || '?'}</span>
+    <div class="chat-text">${m.message || ''}</div>
+    <div class="chat-time">${fmtTs(m.time_created)}</div>
+  `;
+  return div;
+}
+
+// ── Live polling ──────────────────────────────────────────────────
+let guildPollInterval = null;
+let guildPollActive   = true;
+
+function startGuildPoll() {
+  if (guildPollInterval) clearInterval(guildPollInterval);
+  guildPollInterval = setInterval(pollGuildChat, 15000);
+}
+
+async function pollGuildChat() {
+  try {
+    const res  = await fetch('/api/guild_messages');
+    const data = await res.json();
+    const msgs = data.messages || [];
+    const wasBottom = gc.scrollHeight - gc.scrollTop - gc.clientHeight < 60;
+    let added = 0;
+    msgs.forEach(m => {
+      const mid = String(m.id ?? '');
+      if (!mid || knownGuildIds.has(mid)) return;
+      knownGuildIds.add(mid);
+      const empty = document.getElementById('guild-chat-empty');
+      if (empty) empty.remove();
+      gc.appendChild(buildGuildMsgEl(m));
+      added++;
+    });
+    if (added > 0 && wasBottom) gc.scrollTop = gc.scrollHeight;
+  } catch { /* ignore */ }
+}
+
+document.getElementById('guild-poll-toggle').addEventListener('click', function() {
+  guildPollActive = !guildPollActive;
+  if (guildPollActive) {
+    startGuildPoll();
+    this.textContent = 'Pause';
+    document.getElementById('guild-poll-indicator').textContent = '🔄 15s';
+  } else {
+    clearInterval(guildPollInterval);
+    this.textContent = 'Resume';
+    document.getElementById('guild-poll-indicator').textContent = '⏸ Paused';
+  }
+});
+
+startGuildPoll();
+
+// ── Send message ──────────────────────────────────────────────────
 async function sendGuildMsg() {
   const input = document.getElementById('guild-msg-input');
-  const msg = input.value.trim();
+  const msg   = input.value.trim();
   if (!msg) return;
   const btn = input.nextElementSibling;
   btn.disabled = true;
@@ -148,7 +220,7 @@ async function sendGuildMsg() {
   if (res.status === 'success') {
     toast('✅ Message sent!');
     input.value = '';
-    setTimeout(() => location.reload(), 600);
+    setTimeout(pollGuildChat, 400);  // Show own message immediately
   } else {
     toast('❌ ' + (res.message || res.error || 'Failed'), false);
   }
