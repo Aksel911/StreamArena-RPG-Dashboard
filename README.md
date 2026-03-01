@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/static/favicon/android-chrome-512x512.png" alt="StreamArena RPG Dashboard" width="80%">
+<img src="https://raw.githubusercontent.com/Aksel911/StreamArena-RPG-Dashboard/refs/heads/main/static/favicon/android-chrome-512x512.png" alt="StreamArena RPG Dashboard" width="50%">
 
 <br><br>
 
