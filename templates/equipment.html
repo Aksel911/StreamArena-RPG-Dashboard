@@ -209,7 +209,23 @@
       </div>
       <div class="power-bar-wrap">
         <div class="power-bar-label">
-          <span>✨</span>
+          {% if item.get('slot') == 'weapon' %}
+            <span>✨ Damage</span>
+          {% elif item.get('slot') == 'off_hand' %}
+              <span>✨ Armor</span>
+          {% elif item.get('slot') == 'head' %}
+              <span>✨ HP</span>
+          {% elif item.get('slot') == 'body' %}
+              <span>✨ HP</span>
+          {% elif item.get('slot') == 'hands' %}
+              <span>✨ A. Speed</span>
+          {% elif item.get('slot') == 'feet' %}
+              <span>✨ M. Speed</span>
+          {% elif item.get('slot') == 'ring' %}
+              <span>✨ Ring Bonus</span>
+          {% elif item.get('slot') == 'neck' %}
+              <span>✨ Neck Bonus</span>
+          {% endif %}
           <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
             {{ "%.2f"|format(power_pct) }}%
           </span>
