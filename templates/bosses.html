@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Bosses & Dungeons{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">💀 Bosses & Dungeons</div>
+    <div class="page-subtitle">Active world encounters</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  {# World Bosses #}
+  <div>
+    <div class="card">
+      <div class="card-title">☠️ World Bosses</div>
+      {% set boss_list = bosses_data.get('bosses', []) %}
+      {% if boss_list %}
+      {% for boss in boss_list %}
+      {% set pct = (boss.get('current_hp', 0) / boss.get('max_hp', 1) * 100)|round(1) %}
+      {% set is_dead = boss.get('is_dead', 0) == 1 %}
+      <div style="padding:16px;margin-bottom:12px;background:var(--bg3);border-radius:8px;border:1px solid {% if is_dead %}var(--border){% else %}rgba(161,32,32,0.4){% endif %};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:{% if is_dead %}var(--text3){% else %}#ff6666{% endif %};">
+              {% if is_dead %}☠️{% else %}👹{% endif %} {{ boss.get('mob_name','?') }}
+            </div>
+            <div style="font-size:0.75rem;color:var(--text3);">{{ boss.get('mob_id','?') }} • Level {{ boss.get('level','?') }}</div>
+          </div>
+          <div style="text-align:right;">
+            {% if is_dead %}
+            <span class="badge badge-red">DEFEATED</span>
+            {% else %}
+            <span class="badge" style="background:rgba(161,32,32,0.3);color:#ff8888;border:1px solid rgba(200,50,50,0.5);">ALIVE</span>
+            {% endif %}
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:3px;">⏰ {{ boss.get('time_left','?') }}</div>
+          </div>
+        </div>
+
+        <div style="font-size:0.78rem;color:var(--text2);margin-bottom:5px;display:flex;justify-content:space-between;">
+          <span>HP</span>
+          <span>{{ "{:,}".format(boss.get('current_hp',0)) }} / {{ "{:,}".format(boss.get('max_hp',0)) }}</span>
+        </div>
+        <div class="hp-bar">
+          <div class="hp-bar-fill {% if is_dead %}dead{% else %}alive{% endif %}" style="width:{{ pct }}%"></div>
+        </div>
+
+        {% if boss.get('rewards') %}
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">
+          {% for reward in boss.get('rewards',[]) %}
+          <span class="badge {% if reward[0]=='platinum' %}badge-blue{% elif reward[0]=='gem' %}badge-blue{% elif reward[0]=='chest' %}badge-green{% else %}badge-gold{% endif %}" style="font-size:0.7rem;">
+            {% if reward[0]=='platinum' %}💎{% elif reward[0]=='gem' %}💠{% elif reward[0]=='chest' %}📦{% elif reward[0]=='consumable' %}🧪{% else %}🎁{% endif %}
+            {{ reward[1] }}{% if reward|length > 2 %} ×{{ reward[2] }}{% endif %}
+          </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="margin-top:8px;font-size:0.72rem;color:var(--text3);">
+          👥 {{ boss.get('participants', [])|length }} participant(s)
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty-state"><div class="icon">☠️</div><p>No active bosses.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    {# Dungeons #}
+    <div class="card">
+      <div class="card-title">🏛️ Active Dungeons</div>
+      {% set dungeon_list = dungeons.get('dungeons', []) %}
+      {% if dungeon_list %}
+      {% for d in dungeon_list %}
+      <div style="padding:14px;margin-bottom:10px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold2);">{{ d.get('name','?') }}</div>
+          <div style="font-size:0.75rem;color:var(--text3);margin-top:3px;">
+            📦 {{ d.get('chest_count','?') }} chests  •  ID {{ d.get('id','?') }}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span class="badge badge-blue" style="font-size:0.75rem;">
+            🪙 {{ d.get('streamer_coin_cost','?') }} coins
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty-state"><div class="icon">🏛️</div><p>No dungeons available.</p></div>
+      {% endif %}
+    </div>
+
+    {# World Battles #}
+    <div class="card">
+      <div class="card-title">⚔️ World Battles</div>
+      {% set battle_list = battles.get('battles', []) %}
+      {% if battle_list %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for b in battle_list %}
+      <div style="padding:14px;background:var(--bg3);border-radius:8px;border:1px solid rgba(201,168,76,0.25);">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold2);">
+              ⚔️ Boss Battle #{{ b.get('boss_id','?') }}
+            </div>
+            {% if b.get('channel') %}
+            <div style="font-size:0.75rem;color:var(--text3);margin-top:3px;">
+              📺 Channel: <span style="color:var(--text2);">{{ b.get('channel') }}</span>
+            </div>
+            {% endif %}
+          </div>
+          <span class="badge" style="background:rgba(255,100,100,0.2);color:#ff8888;border:1px solid rgba(255,100,100,0.4);">LIVE</span>
+        </div>
+        {% if b.get('guild_id') %}
+        <div style="font-size:0.73rem;color:var(--text3);margin-top:6px;">🏛️ Guild ID: {{ b.get('guild_id') }}</div>
+        {% endif %}
+        {% if b.get('participants') %}
+        <div style="font-size:0.73rem;color:var(--text3);margin-top:4px;">👥 {{ b.get('participants')|length }} participant(s)</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="icon">⚔️</div><p>No active world battles.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

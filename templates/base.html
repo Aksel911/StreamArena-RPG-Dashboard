@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}StreamArena RPG{% endblock %} — Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg0: #07070e;
+      --bg1: #0f0f1a;
+      --bg2: #161624;
+      --bg3: #1e1e30;
+      --bg4: #262638;
+      --gold: #c9a84c;
+      --gold2: #e8c96a;
+      --gold3: #f5e0a0;
+      --red: #a12020;
+      --red2: #cc3333;
+      --blue: #3a5fa8;
+      --blue2: #5580d8;
+      --teal: #2a7a6a;
+      --teal2: #3aaa8a;
+      --text: #ddd0b8;
+      --text2: #a8977e;
+      --text3: #6a5a48;
+      --border: rgba(201,168,76,0.18);
+      --border2: rgba(201,168,76,0.35);
+      --shadow: 0 4px 32px rgba(0,0,0,0.6);
+      --glow: 0 0 20px rgba(201,168,76,0.15);
+    }
+
+    html { font-size: 15px; }
+    body {
+      background: var(--bg0);
+      color: var(--text);
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ─ Background ─ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 90% 90%, rgba(80,30,30,0.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* ─ Noise overlay ─ */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      pointer-events: none;
+    }
+
+    /* ─ Layout ─ */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+      position: relative; z-index: 1;
+    }
+
+    /* ─ Sidebar ─ */
+    .sidebar {
+      width: 230px;
+      flex-shrink: 0;
+      background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 100%);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .game-name {
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold3) 50%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+    .sidebar-logo .sub {
+      font-size: 0.7rem;
+      color: var(--text3);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .sidebar-user {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--red) 0%, var(--bg4) 100%);
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .user-name {
+      font-family: 'Cinzel', serif;
+      font-size: 0.8rem;
+      color: var(--gold2);
+      font-weight: 600;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .user-logout { font-size: 0.7rem; color: var(--text3); }
+    .user-logout a { color: var(--text3); text-decoration: none; transition: color 0.2s ease, border-color 0.2s ease;}
+    .user-logout a:hover { color: var(--red2); }
+
+    .sidebar-nav { flex: 1; padding: 12px 0; }
+    .nav-section {
+      padding: 6px 20px 2px;
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text3);
+      font-family: 'Cinzel', serif;
+    }
+    .nav-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 20px;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+      margin: 1px 0;
+    }
+    .nav-link:hover { color: var(--gold2); background: rgba(201,168,76,0.06); }
+    .nav-link.active {
+      color: var(--gold2);
+      border-left-color: var(--gold);
+      background: rgba(201,168,76,0.08);
+    }
+    .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.7rem;
+      color: var(--text3);
+      text-align: center;
+    }
+    .sidebar-footer a { color: var(--gold); text-decoration: none; transition: color 0.2s ease, border-color 0.2s ease;}
+
+    /* ─ Main content ─ */
+    .main {
+      flex: 1;
+      min-width: 0;
+      padding: 28px 32px;
+    }
+
+    /* ─ Page header ─ */
+    .page-header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-end; justify-content: space-between;
+      flex-wrap: wrap; gap: 10px;
+    }
+    .page-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--gold2);
+      letter-spacing: 0.04em;
+    }
+    .page-subtitle { font-size: 0.85rem; color: var(--text2); margin-top: 2px; }
+
+    /* ─ Cards ─ */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--border2); }
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border2) 0%, transparent 100%);
+    }
+
+    /* ─ Grid layouts ─ */
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .main { padding: 16px; }
+      .sidebar { width: 60px; }
+      .sidebar .nav-link span, .sidebar .nav-section,
+      .sidebar-logo .game-name, .sidebar-logo .sub,
+      .user-name, .user-logout, .sidebar-footer { display: none; }
+    }
+
+    /* ─ Stat boxes ─ */
+    .stat-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .stat-box .val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--gold2);
+    }
+    .stat-box .lbl { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+    /* ─ Currency ─ */
+    .currency { display: inline-flex; align-items: center; gap: 4px; }
+    .currency-gold { color: #e8c050; }
+    .currency-plat { color: #b0c4de; }
+    .currency-gem { color: #88aaff; }
+
+    /* ─ Item card ─ */
+    .item-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .item-card:hover { border-color: var(--border2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+    .item-card.locked { border-color: rgba(201,168,76,0.4); background: rgba(201,168,76,0.04); }
+    .item-header { display: flex; align-items: center; gap: 8px; }
+    .item-slot-badge {
+      font-size: 1.1rem;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg4);
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .item-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+    .item-id { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--text3); }
+    .power-bar-wrap { }
+    .power-bar-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.7rem; color: var(--text2); margin-bottom: 3px;
+    }
+    .power-bar {
+      height: 4px;
+      background: var(--bg4);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .power-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal) 0%, var(--teal2) 100%);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    .item-extra {
+      font-size: 0.72rem;
+      color: var(--gold);
+      background: rgba(201,168,76,0.08);
+      border-radius: 3px;
+      padding: 2px 6px;
+      display: inline-block;
+      width: fit-content;
+    }
+    .item-classes { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+    .class-tag {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      background: var(--bg4);
+      border-radius: 3px;
+      color: var(--text3);
+      border: 1px solid var(--border);
+    }
+    .lock-icon {
+      position: absolute; top: 8px; right: 8px;
+      font-size: 0.75rem; color: var(--gold);
+    }
+    .item-actions { display: flex; gap: 6px; margin-top: 4px; }
+    .btn-sm {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid;
+      cursor: pointer;
+      font-family: 'Crimson Text', serif;
+      transition: all 0.15s;
+    }
+    .btn-danger { background: rgba(161,32,32,0.2); border-color: var(--red); color: #cc6666; }
+    .btn-danger:hover { background: rgba(161,32,32,0.4); }
+    .btn-lock { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
+    .btn-lock:hover { background: rgba(201,168,76,0.2); }
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(201,168,76,0.2) 0%, rgba(201,168,76,0.1) 100%);
+      border-color: var(--gold);
+      color: var(--gold2);
+      padding: 8px 20px;
+      font-size: 0.85rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Crimson Text', serif;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-primary:hover { background: rgba(201,168,76,0.3); }
+
+    /* ─ Tables ─ */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(201,168,76,0.06); color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(201,168,76,0.03); }
+
+    /* ─ Badge ─ */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 0.05em;
+    }
+    .badge-gold { background: rgba(201,168,76,0.15); color: var(--gold2); border: 1px solid rgba(201,168,76,0.3); }
+    .badge-red { background: rgba(161,32,32,0.2); color: #cc6666; border: 1px solid rgba(161,32,32,0.3); }
+    .badge-green { background: rgba(42,122,106,0.2); color: var(--teal2); border: 1px solid rgba(42,122,106,0.3); }
+    .badge-blue { background: rgba(58,95,168,0.2); color: var(--blue2); border: 1px solid rgba(58,95,168,0.3); }
+
+    /* ─ Boss HP bar ─ */
+    .hp-bar { height: 8px; background: var(--bg4); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .hp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--red) 0%, var(--red2) 100%); border-radius: 4px; }
+    .hp-bar-fill.dead { background: var(--bg4); }
+    .hp-bar-fill.alive { background: linear-gradient(90deg, #882222 0%, #cc3333 100%); }
+
+    /* ─ Rank badge ─ */
+    .rank-1 { color: #ffd700; font-weight: 800; }
+    .rank-2 { color: #c0c0c0; font-weight: 700; }
+    .rank-3 { color: #cd7f32; font-weight: 700; }
+
+    /* ─ Filters ─ */
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; align-items: center; }
+    .filter-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-decoration: none;
+      font-family: 'Crimson Text', serif;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      border-color: var(--gold);
+      color: var(--gold2);
+      background: rgba(201,168,76,0.1);
+    }
+    .filter-sep { color: var(--text3); padding: 0 4px; line-height: 2; }
+
+    /* ─ Empty state ─ */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text3);
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; opacity: 0.5; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ─ Alert ─ */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.88rem;
+      border-left: 3px solid;
+    }
+    .alert-error { background: rgba(161,32,32,0.15); border-color: var(--red2); color: #e06666; }
+    .alert-success { background: rgba(42,122,106,0.15); border-color: var(--teal2); color: var(--teal2); }
+    .alert-info { background: rgba(58,95,168,0.15); border-color: var(--blue2); color: var(--blue2); }
+
+    /* ─ Pagination ─ */
+    .pagination { display: flex; gap: 6px; align-items: center; margin-top: 20px; }
+    .page-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text2);
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+    .page-btn:hover, .page-btn.active { border-color: var(--gold); color: var(--gold2); }
+    .page-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ─ Chat messages ─ */
+    .chat-msg { padding: 10px 0; border-bottom: 1px solid rgba(201,168,76,0.06); }
+    .chat-msg:last-child { border-bottom: none; }
+    .chat-sender { font-family: 'Cinzel', serif; font-size: 0.78rem; color: var(--gold); }
+    .chat-sender.dev { color: #8888ff; }
+    .chat-sender.streamer { color: #ff88aa; }
+    .chat-text { font-size: 0.9rem; color: var(--text); margin-top: 2px; overflow-wrap: break-word; }
+    .chat-time { font-size: 0.65rem; color: var(--text3); margin-top: 2px; }
+
+    /* ─ Mail ─ */
+    .mail-item { padding: 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+    .mail-item.unread { border-left: 3px solid var(--gold); }
+    .mail-sender { font-family: 'Cinzel', serif; font-size: 0.78rem; color: var(--gold); }
+    .mail-msg { font-size: 0.9rem; }
+    .mail-date { font-size: 0.68rem; color: var(--text3); }
+
+    /* ─ Scrollbar ─ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg1); }
+    ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+
+    /* ─ Animations ─ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.3s ease forwards; }
+    .card { animation: fadeUp 0.25s ease forwards; }
+
+    /* ─ Gold divider ─ */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--border2) 30%, var(--border2) 70%, transparent 100%);
+      margin: 16px 0;
+    }
+
+    /* ─ Tooltip (pure css) ─ */
+    [data-tip] { position: relative; cursor: help; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+      background: var(--bg4);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* ─ Toast ─ */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: var(--bg4);
+      border: 1px solid var(--border2);
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 300px;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ─ Input ─ */
+    input[type=text], input[type=password], select, textarea {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-family: 'Crimson Text', serif;
+      font-size: 0.9rem;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(201,168,76,0.1);
+    }
+    select option { background: var(--bg3); }
+
+    /* ─ Voucher form ─ */
+    .voucher-form { display: flex; gap: 8px; margin-top: 12px; }
+    .voucher-form input { flex: 1; }
+
+    /* === Стили для ссылок (общие) === */
+    a {
+        color: var(--gold);                 /* Основной цвет — золотой */
+        text-decoration: none;               /* Убираем стандартное подчёркивание */
+        transition: color 0.2s ease, border-color 0.2s ease;
+        font-weight: 500;
+    }
+
+    a:hover {
+        color: var(--gold3);                 /* При наведении — более светлый золотой */
+    }
+
+    .username-link {
+        color: var(--gold2);
+        text-decoration: none;
+        font-size: 0.8rem;
+        transition: color 0.2s ease, border-color 0.2s ease;
+    }
+    .username-link:hover {
+        color: var(--gold3);
+    }
+
+    
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+
+  {% if session.get('token') %}
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="game-name">StreamArena<br>RPG</div>
+      <div class="sub">Portal Dashboard</div>
+    </div>
+
+    {% if session.get('username') %}
+    <div class="sidebar-user">
+      <div class="user-avatar">⚔️</div>
+      <div>
+        <div class="user-name"><a href="{{ url_for('refresh_udata', next=url_for('dashboard')) }}" class="username-link">{{ session.get('username') }}</a></div>
+        <div class="user-logout">
+          <a href="{{ url_for('refresh_udata', next=request.path) }}">🔄 Refresh</a>
+          &nbsp;·&nbsp;
+          <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Overview</div>
+      <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon">🏰</span><span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('mail') }}" class="nav-link {% if request.endpoint == 'mail' %}active{% endif %}">
+        <span class="nav-icon">📜</span><span>Mail</span>
+      </a>
+
+      <div class="nav-section">Character</div>
+      <a href="{{ url_for('equipment') }}" class="nav-link {% if request.endpoint == 'equipment' %}active{% endif %}">
+        <span class="nav-icon">🛡️</span><span>Equipment</span>
+      </a>
+      <a href="{{ url_for('inventory') }}" class="nav-link {% if request.endpoint == 'inventory' %}active{% endif %}">
+        <span class="nav-icon">🎒</span><span>Inventory</span>
+      </a>
+      <a href="{{ url_for('cosmetics') }}" class="nav-link {% if request.endpoint == 'cosmetics' %}active{% endif %}">
+        <span class="nav-icon">✨</span><span>Cosmetics</span>
+      </a>
+
+      <div class="nav-section">World</div>
+      <a href="{{ url_for('bosses') }}" class="nav-link {% if request.endpoint == 'bosses' %}active{% endif %}">
+        <span class="nav-icon">💀</span><span>Bosses & Dungeons</span>
+      </a>
+      <a href="{{ url_for('leaderboard') }}" class="nav-link {% if request.endpoint == 'leaderboard' %}active{% endif %}">
+        <span class="nav-icon">🏆</span><span>Leaderboard</span>
+      </a>
+      <a href="{{ url_for('chat') }}" class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}">
+        <span class="nav-icon">💬</span><span>Global Chat</span>
+      </a>
+
+      <div class="nav-section">Economy</div>
+      <a href="{{ url_for('market') }}" class="nav-link {% if request.endpoint == 'market' %}active{% endif %}">
+        <span class="nav-icon">⚖️</span><span>Marketplace</span>
+      </a>
+
+      <div class="nav-section">Social</div>
+      <a href="{{ url_for('guild') }}" class="nav-link {% if request.endpoint == 'guild' %}active{% endif %}">
+        <span class="nav-icon">🏰</span><span>Guild</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="https://streamarenarpg.com" target="_blank">↗ Open Game</a>
+    </div>
+  </aside>
+  {% endif %}
+
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = ok ? 'var(--teal2)' : 'var(--red2)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function apiAction(url, data) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+
+async function destroyItem(id, name) {
+  if (!confirm(`Destroy "${name}"? This cannot be undone!`)) return;
+  const res = await apiAction('/action/destroy', {item_id: id});
+  if (res.status === 'success') { toast('Item destroyed.'); setTimeout(()=>location.reload(), 800); }
+  else toast('Error: ' + (res.message || res.error || 'unknown'), false);
+}
+
+async function toggleLock(id, lock) {
+  const res = await apiAction('/action/lock', {item_ids:[id], toggle: lock ? 'lock' : 'unlock'});
+  if (res.status === 'success') { toast(lock ? 'Item locked.' : 'Item unlocked.'); setTimeout(()=>location.reload(), 800); }
+  else toast('Error: ' + (res.message || res.error || 'unknown'), false);
+}
+</script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

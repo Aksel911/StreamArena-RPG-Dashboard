@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}Equipment{% endblock %}
+{% block content %}
+
+{% set char  = character %}
+{% set level = char.get('level', 0)|int %}
+{% set exp   = char.get('experience', 0)|int %}
+{% set next_exp = level * 10000 if level > 0 else 1000 %}
+{% set exp_pct  = [(exp / next_exp * 100), 100]|min|round(1) if next_exp > 0 else 0 %}
+{% set game_time = char.get('game_time', 0)|int %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">🛡️ Equipment</div>
+    <div class="page-subtitle">{{ class_icons.get(char.get('class',''),'⚔️') }} {{ char.get('class','?')|title }} — Level {{ level }}</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  {# ── Equipped Slots ─────────────────────────────────── #}
+  <div class="card">
+    <div class="card-title">⚔️ Equipped Slots</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      {% for slot, item in equipped.items() %}
+      {% set power_pct = (item.get('power',0)|float * 100)|round(2) if item else 0 %}
+      <div style="background:var(--bg3);border:1px solid {% if item %}rgba(201,168,76,0.35){% else %}var(--border){% endif %};border-radius:8px;padding:14px;position:relative;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:1.3rem;">{{ slot_icons.get(slot,'❓') }}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">{{ slot.replace('_',' ') }}</span>
+        </div>
+        {% if item %}
+        <div style="font-size:0.92rem;font-weight:600;color:var(--text);margin-bottom:6px;">{{ item.get('item_name','?') }}</div>
+        <div style="margin-bottom:6px;">
+          <div class="power-bar-label">
+          {% if item.get('slot') == 'weapon' %}
+            <span>✨ Damage</span>
+          {% elif item.get('slot') == 'off_hand' %}
+              <span>✨ Armor</span>
+          {% elif item.get('slot') == 'head' %}
+              <span>✨ HP</span>
+          {% elif item.get('slot') == 'body' %}
+              <span>✨ HP</span>
+          {% elif item.get('slot') == 'hands' %}
+              <span>✨ A. Speed</span>
+          {% elif item.get('slot') == 'feet' %}
+              <span>✨ M. Speed</span>
+          {% elif item.get('slot') == 'ring' %}
+              <span>✨ Ring Bonus</span>
+          {% elif item.get('slot') == 'neck' %}
+              <span>✨ Neck Bonus</span>
+          {% endif %}
+            <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
+              {{ "%.2f"|format(power_pct) }}%
+            </span>
+          </div>
+          <div class="power-bar">
+            <div class="power-bar-fill" style="width:{{ [power_pct,100]|min }}%;
+              background:{% if power_pct >= 40 %}linear-gradient(90deg,#882222,#cc3333)
+              {% elif power_pct >= 25 %}linear-gradient(90deg,#aa6600,#ffaa44)
+              {% elif power_pct >= 15 %}linear-gradient(90deg,var(--gold),var(--gold2))
+              {% else %}linear-gradient(90deg,var(--teal),var(--teal2)){% endif %}">
+            </div>
+          </div>
+        </div>
+        {% if item.get('extra_parsed') %}
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+          {% if item.extra_parsed.get('extra') %}<span class="item-extra">✦ {{ item.extra_parsed.get('extra') }}</span>{% endif %}
+          {% if item.extra_parsed.get('range') %}<span class="item-extra" style="color:var(--blue2);">🎯 {{ item.extra_parsed.get('range') }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <div style="font-family:'JetBrains Mono',monospace;font-size:0.63rem;color:var(--text3);margin-bottom:8px;">#{{ item.get('id','?') }}</div>
+        <button class="btn-sm btn-danger" style="width:100%;" onclick="unequipSlot('{{ slot }}')">🔓 Unequip</button>
+        {% else %}
+        <div style="color:var(--text3);font-size:0.82rem;font-style:italic;margin-bottom:8px;">— Empty —</div>
+        <button class="btn-sm" style="width:100%;background:var(--bg4);border:1px dashed var(--border);color:var(--text3);cursor:pointer;" onclick="openEquipModal('{{ slot }}')">+ Equip Item</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    {# ── Character Stats ─────────────────────────────── #}
+    <div class="card">
+      <div class="card-title">📊 Character Stats</div>
+      <table>
+        <tr><th>Class</th><td>{{ class_icons.get(char.get('class',''),'⚔️') }} {{ char.get('class','—')|title }}</td></tr>
+        <tr>
+          <th>Slot</th>
+          <td><span style="font-family:'JetBrains Mono',monospace;background:var(--bg4);padding:2px 8px;border-radius:3px;font-size:0.82rem;border:1px solid var(--border);">#{{ char.get('slot','—') }}</span></td>
+        </tr>
+        <tr><th>Level</th><td><strong style="color:var(--gold2);font-family:'Cinzel',serif;font-size:1.05rem;">{{ level }}</strong></td></tr>
+        <tr>
+          <th>Experience</th>
+          <td>
+            <div>{{ "{:,}".format(exp) }} XP</div>
+            <div style="margin-top:5px;">
+              <div class="power-bar-label">
+                <span style="font-size:0.7rem;color:var(--text3);">→ Lv.{{ level+1 }}</span>
+                <span style="font-size:0.7rem;color:var(--gold);">{{ exp_pct }}%</span>
+              </div>
+              <div class="power-bar" style="height:5px;">
+                <div class="power-bar-fill" style="width:{{ exp_pct }}%;background:linear-gradient(90deg,var(--gold),var(--gold3))"></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <th>⏳ Game Time</th>
+          <td>
+            <span style="color:var(--teal2);">{{ game_time // 3600 }}h</span>
+            <span style="color:var(--text2);"> {{ (game_time % 3600) // 60 }}m</span>
+          </td>
+        </tr>
+        <tr><th>Location</th><td>🗺️ {{ char.get('last_played_on','—') }}</td></tr>
+        <tr><th>Skin</th><td>{{ char.get('character_skin','') or '—' }}</td></tr>
+      </table>
+    </div>
+
+    {# ── Skills ──────────────────────────────────────── #}
+    <div class="card">
+      <div class="card-title">🎯 Active Skills</div>
+      {% if skills.get('skills') %}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        {% for sk in skills.get('skills', []) %}
+        <span class="badge badge-blue">{{ sk.get('name') or sk.get('id', '?') }}</span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="color:var(--text3);font-size:0.85rem;">No skills found.</div>
+      {% endif %}
+    </div>
+
+    {# ── Total Power ─────────────────────────────────── #}
+    <div class="card">
+      <div class="card-title">✨ Total Power</div>
+      {% set total = namespace(v=0, count=0) %}
+      {% for slot, item in equipped.items() %}
+        {% if item %}{% set total.v = total.v + item.get('power',0)|float %}{% set total.count = total.count + 1 %}{% endif %}
+      {% endfor %}
+      <div style="text-align:center;padding:16px 0;">
+        <div style="font-family:'Cinzel',serif;font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--gold) 0%,var(--gold3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+          {{ "%.2f"|format(total.v * 100) }}%
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;">
+          ✨ Combined Power ({{ total.count }}/8 slots)
+        </div>
+        {% if total.count > 0 %}
+        <div style="font-size:0.82rem;color:var(--text2);margin-top:6px;">avg {{ "%.2f"|format(total.v / total.count * 100) }}% per slot</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Inventory Panel ──────────────────────────────────────────────── #}
+<div class="card" style="margin-top:20px;">
+  <div class="card-title">🎒 Inventory — Click to Equip / Unequip</div>
+
+  {# Slot filter tabs #}
+  <div class="filters" style="margin-bottom:12px;">
+    <div class="filter-group" id="slot-filter-tabs">
+      <button class="filter-btn active" data-slot="all" onclick="filterInv(this,'all')">All</button>
+      {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+      <button class="filter-btn" data-slot="{{ s }}" onclick="filterInv(this,'{{ s }}')">
+        {{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="inv-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;max-height:480px;overflow-y:auto;">
+    {% for item in all_inv %}
+    {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
+    {% set is_equipped = (item.get('id','')|string) in equipped_ids %}
+    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}"
+         style="{% if is_equipped %}border-color:var(--gold);background:rgba(201,168,76,0.07);{% endif %}cursor:pointer;"
+         onclick="handleInvClick({{ item.get('id') }}, '{{ item.get('slot','') }}', {{ 'true' if is_equipped else 'false' }}, '{{ item.get('item_name','') }}')">
+      {% if is_equipped %}
+      <div style="position:absolute;top:4px;right:4px;"><span class="badge badge-gold" style="font-size:0.6rem;padding:2px 6px;">Equipped</span></div>
+      {% endif %}
+      <div class="item-header">
+        <div class="item-slot-badge">{{ slot_icons.get(item.get('slot',''),'❓') }}</div>
+        <div style="min-width:0;">
+          <div class="item-name" style="font-size:0.8rem;">{{ item.get('item_name','?') }}</div>
+          <div class="item-id">#{{ item.get('id') }}</div>
+        </div>
+      </div>
+      <div class="power-bar-wrap">
+        <div class="power-bar-label">
+          <span>✨</span>
+          <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
+            {{ "%.2f"|format(power_pct) }}%
+          </span>
+        </div>
+        <div class="power-bar" style="height:3px;">
+          <div class="power-bar-fill" style="width:{{ [power_pct,100]|min }}%;
+            background:{% if power_pct >= 40 %}#cc3333{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── Equip slot picker modal ─────────────────────────────────── #}
+<div id="equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;min-width:320px;max-width:420px;width:90%;">
+    <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);margin-bottom:6px;" id="equip-modal-title">Equip Item</div>
+    <div style="font-size:0.82rem;color:var(--text3);margin-bottom:16px;" id="equip-modal-sub"></div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:5px;letter-spacing:0.05em;">EQUIP TO SLOT</label>
+      <select id="equip-slot-select">
+        {% for s in ['any','weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+        <option value="{{ s }}">{{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="flex:1;" onclick="confirmEquip()">✅ Equip</button>
+      <button style="flex:1;background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:8px;cursor:pointer;" onclick="closeEquipModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let pendingEquipId = null;
+let pendingEquipSlot = null;
+
+function filterInv(btn, slot) {
+  document.querySelectorAll('#slot-filter-tabs .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.inv-item').forEach(el => {
+    el.style.display = (slot === 'all' || el.dataset.slot === slot) ? '' : 'none';
+  });
+}
+
+function handleInvClick(id, slot, isEquipped, name) {
+  if (isEquipped) {
+    if (!confirm(`Unequip "${name}"?`)) return;
+    unequipSlot(slot);
+  } else {
+    pendingEquipId   = id;
+    pendingEquipSlot = slot;
+    document.getElementById('equip-modal-title').textContent = `Equip: ${name}`;
+    document.getElementById('equip-modal-sub').textContent   = `Item #${id} | Slot: ${slot}`;
+    // Pre-select the slot
+    const sel = document.getElementById('equip-slot-select');
+    for (let opt of sel.options) { if (opt.value === slot) { sel.value = slot; break; } }
+    document.getElementById('equip-modal').style.display = 'flex';
+  }
+}
+
+function openEquipModal(slot) {
+  document.getElementById('equip-modal-title').textContent = 'Choose an item to equip';
+  document.getElementById('equip-modal-sub').textContent   = `Slot: ${slot}`;
+  document.getElementById('equip-slot-select').value = slot;
+  document.getElementById('equip-modal').style.display = 'flex';
+}
+
+function closeEquipModal() {
+  document.getElementById('equip-modal').style.display = 'none';
+  pendingEquipId   = null;
+  pendingEquipSlot = null;
+}
+
+async function confirmEquip() {
+  if (!pendingEquipId) { closeEquipModal(); return; }
+  const slot = document.getElementById('equip-slot-select').value;
+  const res  = await apiAction('/action/equip', {item_id: pendingEquipId, slot});
+  if (res.status === 'success') {
+    toast('✅ Item equipped!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Equip failed'), false);
+  }
+  closeEquipModal();
+}
+
+async function unequipSlot(slot) {
+  const res = await apiAction('/action/unequip', {slot});
+  if (res.status === 'success') {
+    toast('✅ Unequipped!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Unequip failed'), false);
+  }
+}
+
+// Close modal on backdrop click
+document.getElementById('equip-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEquipModal();
+});
+</script>
+{% endblock %}

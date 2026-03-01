@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamArena RPG — Portal Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg0: #07070e; --bg2: #161624; --bg3: #1e1e30; --bg4: #262638;
+      --gold: #c9a84c; --gold2: #e8c96a; --gold3: #f5e0a0;
+      --red: #a12020; --red2: #cc3333;
+      --text: #ddd0b8; --text2: #a8977e; --text3: #6a5a48;
+      --border: rgba(201,168,76,0.18); --border2: rgba(201,168,76,0.4);
+    }
+    body {
+      background: var(--bg0);
+      font-family: 'Crimson Text', Georgia, serif;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% 0%, rgba(201,168,76,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(120,30,30,0.12) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .login-wrap {
+      width: 100%; max-width: 440px;
+      padding: 20px;
+      position: relative; z-index: 1;
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .logo-emblem {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 0 20px rgba(201,168,76,0.4));
+    }
+    .logo-title {
+      font-family: 'Cinzel', serif;
+      font-weight: 800;
+      font-size: 1.8rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold3) 50%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    .logo-sub {
+      font-size: 0.75rem;
+      color: var(--text3);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 32px;
+      box-shadow: 0 8px 48px rgba(0,0,0,0.7);
+    }
+    .card-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      color: var(--gold);
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title::after { content: ''; flex:1; height:1px; background: linear-gradient(90deg, var(--border2), transparent); }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.05em; }
+    input[type=text] {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201,168,76,0.12); }
+    .hint { font-size: 0.75rem; color: var(--text3); margin-top: 5px; }
+    .hint a { color: var(--gold); text-decoration: none; }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(201,168,76,0.25) 0%, rgba(201,168,76,0.12) 100%);
+      border: 1px solid var(--gold);
+      color: var(--gold2);
+      border-radius: 6px;
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn:hover { background: rgba(201,168,76,0.35); box-shadow: 0 0 20px rgba(201,168,76,0.2); }
+    .alert {
+      background: rgba(161,32,32,0.15);
+      border: 1px solid var(--red2);
+      border-left-width: 3px;
+      color: #e06666;
+      padding: 10px 14px;
+      border-radius: 5px;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+    }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .feature {
+      text-align: center;
+      padding: 12px 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text3);
+    }
+    .feature .icon { display: block; font-size: 1.3rem; margin-bottom: 4px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .card { animation: fadeIn 0.4s ease; }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-logo">
+    <span class="logo-emblem">⚔️</span>
+    <div class="logo-title">StreamArena<br>RPG</div>
+    <div class="logo-sub">Portal Dashboard</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔑 Enter your Token</div>
+    {% if error %}
+    <div class="alert">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+      <div class="form-group">
+        <label>API TOKEN</label>
+        <input type="text" name="token" placeholder="Paste your token here..." autocomplete="off" required>
+        <div class="hint">
+          Find your token in the game portal network tab
+          (<a href="https://streamarenarpg.com/portal/app/portal.html" target="_blank">↗ open portal</a>)
+        </div>
+      </div>
+      <button type="submit" class="btn">Enter the Portal</button>
+    </form>
+  </div>
+
+  <div class="features">
+    <div class="feature"><span class="icon">🎒</span>Inventory</div>
+    <div class="feature"><span class="icon">⚖️</span>Market</div>
+    <div class="feature"><span class="icon">💀</span>Bosses</div>
+    <div class="feature"><span class="icon">🏆</span>Rankings</div>
+    <div class="feature"><span class="icon">🏰</span>Guild</div>
+    <div class="feature"><span class="icon">💬</span>Chat</div>
+  </div>
+</div>
+</body>
+</html>

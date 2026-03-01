@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+{% set user = udata.get('user', {}) %}
+{% set char = udata.get('characters', [{}])[0] if udata.get('characters') else {} %}
+{% set level = char.get('level', 0)|int %}
+{% set exp = char.get('experience', 0)|int %}
+{% set next_exp = level * 10000 if level > 0 else 1000 %}
+{% set exp_pct = [(exp / next_exp * 100), 100]|min|round(1) if next_exp > 0 else 0 %}
+{% set items_used = udata.get('player_items', [])|length %}
+{% set inv_total = user.get('inventory_slots', 0)|int %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">⚔️ Dashboard</div>
+    <div class="page-subtitle">Welcome back, <a href="https://www.twitch.tv/{{ user.get('username', '—') }}" target="_blank" rel="noopener noreferrer">{{ user.get('username', '—') }}</a></div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    {% if streamer.get('is_streamer') %}
+    <span class="badge badge-gold">🎥 Streamer</span>
+    {% endif %}
+    {% if user.get('banned') %}
+    <span class="badge badge-red">⛔ Banned</span>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Currency / Stats Row ─────────────────────────────────────── #}
+<div class="grid-4" style="margin-bottom:20px;">
+  <div class="stat-box">
+    <div class="val currency-gold">{{ "{:,}".format(user.get('gold', 0)|int) }}</div>
+    <div class="lbl">🥇 Gold</div>
+  </div>
+  <div class="stat-box">
+    <div class="val currency-plat">{{ user.get('platinum', 0) }}</div>
+    <div class="lbl">💎 Platinum</div>
+  </div>
+  <div class="stat-box">
+    <div class="val currency-gem">{{ user.get('gems', 0) }}</div>
+    <div class="lbl">💠 Gems</div>
+  </div>
+  <div class="stat-box">
+    <div class="val">
+      <span style="color:{% if inv_total > 0 and items_used / inv_total > 0.9 %}var(--red2){% elif inv_total > 0 and items_used / inv_total > 0.75 %}#ffaa44{% else %}var(--teal2){% endif %}">
+        {{ items_used }}
+      </span>
+      <span style="color:var(--text3);font-size:0.7em;">/{{ inv_total }}</span>
+    </div>
+    <div class="lbl">🎒 Inv. Slots</div>
+    {% if inv_total > 0 %}
+    <div class="power-bar" style="height:3px;margin-top:4px;border-radius:2px;">
+      <div class="power-bar-fill" style="width:{{ [(items_used / inv_total * 100), 100]|min|round }}%;
+        background:{% if items_used / inv_total > 0.9 %}var(--red2){% elif items_used / inv_total > 0.75 %}#ffaa44{% else %}var(--teal2){% endif %};"></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  {# ── Character Card ───────────────────────────── #}
+  <div class="card">
+    <div class="card-title">🧝 Character</div>
+    {% if char %}
+    <table>
+      <tr><th>Class</th><td>{{ class_icons.get(char.get('class',''), '⚔️') }} {{ char.get('class', '—')|title }}</td></tr>
+      <tr><th>Level</th><td><strong style="color:var(--gold2);font-family:'Cinzel',serif;font-size:1.05rem;">{{ level }}</strong></td></tr>
+      <tr>
+        <th>Experience</th>
+        <td>
+          <div>{{ "{:,}".format(exp) }} XP</div>
+          <div style="margin-top:4px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text3);margin-bottom:2px;">
+              <span>→ Lv.{{ level + 1 }}</span><span style="color:var(--gold);">{{ exp_pct }}%</span>
+            </div>
+            <div class="power-bar" style="height:4px;">
+              <div class="power-bar-fill" style="width:{{ exp_pct }}%;background:linear-gradient(90deg,var(--gold),var(--gold3))"></div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <th>Slot</th>
+        <td><span style="font-family:'JetBrains Mono',monospace;background:var(--bg4);padding:2px 8px;border-radius:3px;font-size:0.82rem;border:1px solid var(--border);">#{{ char.get('slot', '—') }}</span></td>
+      </tr>
+      <tr>
+        <th>⏳ Game Time</th>
+        <td>
+          <span style="color:var(--teal2);">{{ (char.get('game_time', 0)|int // 3600) }}h</span>
+          <span style="color:var(--text2);"> {{ ((char.get('game_time', 0)|int % 3600) // 60) }}m</span>
+        </td>
+      </tr>
+      <tr><th>Location</th><td>🗺️ {{ char.get('last_played_on', '—') }}</td></tr>
+      <tr><th>Skin</th><td>{{ char.get('character_skin','') or '—' }}</td></tr>
+      <tr><th>Registered</th><td style="font-size:0.8rem;color:var(--text2)">{{ user.get('date_created', '—')[:10] }}</td></tr>
+    </table>
+    <div style="margin-top:12px;">
+      <a href="{{ url_for('equipment') }}" class="btn-primary" style="text-decoration:none;display:inline-block;">View Equipment →</a>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">🧝</div><p>No character found.</p></div>
+    {% endif %}
+  </div>
+
+  {# ── Guild + Skills ───────────────────────────── #}
+  <div class="card">
+    <div class="card-title">🏰 Guild Status</div>
+    {% if udata.get('guild_id') and udata.get('guild_id')|int > 0 %}
+    <p style="font-size:0.85rem;color:var(--text2);margin-bottom:12px;">
+      Guild ID: <strong style="color:var(--gold)">{{ udata.get('guild_id') }}</strong>
+    </p>
+    <a href="{{ url_for('guild') }}" class="btn-primary" style="text-decoration:none;display:inline-block;">View Guild →</a>
+    {% else %}
+    <div class="empty-state"><div class="icon">🏰</div><p>Not in a guild.</p></div>
+    {% endif %}
+
+    <div class="divider"></div>
+
+    <div class="card-title" style="margin-bottom:10px;">📜 Skills</div>
+    {% if skills.get('skills') %}
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      {% for sk in skills.get('skills', []) %}
+      <span class="badge badge-blue">{{ sk.get('name') or sk.get('id', '?') }}</span>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:var(--text3);font-size:0.85rem;">No skills loaded.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  {# ── Mail ─────────────────────────────────────── #}
+  <div class="card">
+    <div class="card-title">📬 Recent Mail
+      <a href="{{ url_for('mail') }}" style="font-size:0.72rem;color:var(--gold);text-decoration:none;font-family:'Crimson Text',serif;font-weight:400;margin-left:auto;">View All →</a>
+    </div>
+    {% set mails = mail.get('mail', []) %}
+    {% if mails %}
+    {% for m in mails[:4] %}
+    <div class="mail-item {% if not m.get('marked_read') %}unread{% endif %}">
+      <span class="mail-sender">{{ m.get('sender', '—') }}</span>
+      <span class="mail-msg">{{ m.get('message', '') }}</span>
+      <span class="mail-date">{{ m.get('created_at', '') }}</span>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state"><div class="icon">📭</div><p>No mail.</p></div>
+    {% endif %}
+  </div>
+
+  {# ── Chests & Daily Spin ──────────────────────── #}
+  <div class="card">
+    <div class="card-title">📦 Chests & Rewards</div>
+
+    {% if spin.get('next_spin_unix') %}
+    <div style="margin-bottom:14px;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
+      <div style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold3);text-transform:uppercase;letter-spacing:0.1em;">🎡 Daily Spin</div>
+      <div style="font-size:0.85rem;color:var(--text2);margin-top:4px;" id="spin-timer" data-ts="{{ spin.get('next_spin_unix', 0) }}">
+        Loading...
+      </div>
+    </div>
+    {% endif %}
+
+    {% set player_chests = chests.get('chests', []) %}
+    {% if player_chests %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for chest in player_chests %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:5px;border:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.88rem;font-weight:600;">{{ chest.get('display_name', '?') }}</div>
+          <div style="font-size:0.72rem;color:var(--text3);">x{{ chest.get('amount', 0) }}</div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--blue2);">{{ chest.get('gem_cost', 0) }} 💠</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">📦</div><p>No chests.</p></div>
+    {% endif %}
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:10px;">🔮 Voucher Redeem</div>
+    <div class="voucher-form">
+      <input type="text" id="voucher-input" placeholder="Enter voucher code...">
+      <button class="btn-primary" onclick="redeemVoucher()">Redeem</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const spinEl = document.getElementById('spin-timer');
+if (spinEl) {
+  const ts = parseInt(spinEl.dataset.ts, 10) * 1000;
+  function updateTimer() {
+    const diff = ts - Date.now();
+    if (diff <= 0) { spinEl.textContent = '✅ Ready to spin!'; spinEl.style.color = 'var(--teal2)'; return; }
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    spinEl.textContent = `⏰ Next spin in: ${h}h ${m}m ${s}s`;
+  }
+  updateTimer();
+  setInterval(updateTimer, 1000);
+}
+
+async function redeemVoucher() {
+  const code = document.getElementById('voucher-input').value.trim();
+  if (!code) return;
+  const res = await apiAction('/action/redeem', {voucher_string: code});
+  if (res.status === 'success') toast('✅ Voucher redeemed!');
+  else toast('❌ ' + (res.error || res.message || 'Invalid voucher'), false);
+}
+</script>
+{% endblock %}

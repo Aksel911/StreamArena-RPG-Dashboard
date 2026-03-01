@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">🏆 Leaderboard</div>
+    <div class="page-subtitle">Top players — {{ class_flag|title }}</div>
+  </div>
+</div>
+
+{# Class filter #}
+<div class="filters">
+  {% for c in ['all','barbarian','tank','rogue','mage','summoner','healer','ranger'] %}
+  <a href="{{ url_for('leaderboard', class_flag=c) }}" class="filter-btn {% if c==class_flag %}active{% endif %}">
+    {{ class_icons.get(c,'') }} {{ c|title }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="grid-2">
+  {# Top 25 #}
+  <div class="card" style="grid-column:1/-1;">
+    <div class="card-title">🥇 Top 25 Players</div>
+    {% set top25 = top.get('top_25', []) %}
+    {% if top25 %}
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:50px;">Rank</th>
+            <th>Player</th>
+            <th>Class</th>
+            <th>Level</th>
+            <th>Game Time</th>
+            <th>Skin</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in top25 %}
+          <tr>
+            <td>
+              <span class="{% if p.get('rank',0)|int == 1 %}rank-1{% elif p.get('rank',0)|int == 2 %}rank-2{% elif p.get('rank',0)|int == 3 %}rank-3{% endif %}" style="font-family:'Cinzel',serif;">
+                {% if p.get('rank',0)|int == 1 %}🥇{% elif p.get('rank',0)|int == 2 %}🥈{% elif p.get('rank',0)|int == 3 %}🥉{% else %}#{{ p.get('rank','?') }}{% endif %}
+              </span>
+            </td>
+            <td style="font-weight:{% if p.get('username') == session.get('username') %}700{% else %}400{% endif %};color:{% if p.get('username') == session.get('username') %}var(--gold2){% else %}var(--text){% endif %};">
+              {{ p.get('username','—') }}
+              {% if p.get('username') == session.get('username') %}<span class="badge badge-gold" style="margin-left:6px;font-size:0.6rem;">You</span>{% endif %}
+            </td>
+            <td>{{ class_icons.get(p.get('class',''),'⚔️') }} {{ p.get('class','—')|title }}</td>
+            <td><strong style="color:var(--gold2)">{{ p.get('level','—') }}</strong></td>
+            <td style="font-size:0.8rem;color:var(--text2);">{{ (p.get('game_time',0)|int // 3600) }}h</td>
+            <td style="font-size:0.78rem;color:var(--text3);">{{ p.get('character_skin','') or '—' }}</td>
+            <td style="font-size:0.78rem;color:var(--text2);">{{ p.get('last_played_on','—') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">🏆</div><p>No leaderboard data.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+{# Other players #}
+{% set others = top.get('other_characters', []) %}
+{% if others %}
+<div class="card">
+  <div class="card-title">📋 Extended Rankings (#26+)</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+    {% for p in others %}
+    <div style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <span style="font-size:0.72rem;color:var(--text3);font-family:'Cinzel',serif;">#{{ p.get('rank','?') }}</span>
+        <div style="font-size:0.85rem;font-weight:600;{% if p.get('username') == session.get('username') %}color:var(--gold2){% endif %}">{{ p.get('username','—') }}</div>
+        <div style="font-size:0.72rem;color:var(--text3);">{{ class_icons.get(p.get('class',''),'') }} {{ p.get('class','—')|title }}</div>
+      </div>
+      <strong style="color:var(--gold2);font-family:'Cinzel',serif;">{{ p.get('level','—') }}</strong>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

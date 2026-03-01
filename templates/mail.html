@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Mail{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">📜 Mail</div>
+    <div class="page-subtitle">{{ mail_data.get('mail', [])|length }} messages</div>
+  </div>
+</div>
+
+<div class="card" style="max-width:700px;">
+  <div class="card-title">📬 Inbox</div>
+  {% set mails = mail_data.get('mail', []) %}
+  {% if mails %}
+  {% for m in mails %}
+  <div class="mail-item {% if not m.get('marked_read') %}unread{% endif %}">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;">
+      <span class="mail-sender">
+        {% if m.get('sender') == 'System' %}⚙️{% else %}📩{% endif %}
+        {{ m.get('sender','?') }}
+      </span>
+      {% if not m.get('marked_read') %}<span class="badge badge-gold" style="font-size:0.65rem;">NEW</span>{% endif %}
+    </div>
+    <div class="mail-msg">{{ m.get('message', '') }}</div>
+    <div style="display:flex;gap:12px;margin-top:4px;">
+      <span class="mail-date">📅 {{ m.get('created_at', '') }}</span>
+      <span class="mail-date" style="color:var(--red2);">⏳ Expires: {{ m.get('expiry_date', '') }}</span>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="empty-state"><div class="icon">📭</div><p>No mail.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

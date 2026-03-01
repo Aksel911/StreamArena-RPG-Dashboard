@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Guild{% endblock %}
+{% block content %}
+{% set guild = guild_info.get('guild', {}) %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">🏰 Guild</div>
+    <div class="page-subtitle">{{ guild.get('name', 'No Guild') }}</div>
+  </div>
+  {% if guild.get('tag') %}
+  <span class="badge badge-gold" style="font-size:0.9rem;padding:6px 16px;">[{{ guild.get('tag') }}]</span>
+  {% endif %}
+</div>
+
+{% if error %}
+<div style="background:rgba(220,50,50,0.08);border:1px solid rgba(220,50,50,0.3);border-radius:8px;padding:16px;margin-bottom:20px;">
+  <div style="color:var(--red2);font-size:0.9rem;margin-bottom:14px;">⚠️ {{ error }}</div>
+  <div style="font-size:0.82rem;color:var(--text2);margin-bottom:12px;">
+    If you are in a guild, try <a href="{{ url_for('refresh_udata', next='/guild') }}" style="color:var(--gold);">🔄 refreshing your data</a>,
+    or enter your Guild ID manually below:
+  </div>
+  <form action="{{ url_for('guild_set_id') }}" method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="number" name="guild_id" placeholder="Guild ID (e.g. 7)" style="width:160px;" min="1">
+    <button type="submit" class="btn-primary">Load Guild</button>
+  </form>
+</div>
+{% endif %}
+
+{% if guild %}
+<div class="grid-2">
+  {# Guild Info #}
+  <div>
+    <div class="card">
+      <div class="card-title">⚔️ Guild Info</div>
+      <table>
+        <tr><th>Name</th><td><strong>{{ guild.get('name','—') }}</strong></td></tr>
+        <tr><th>Tag</th><td><code style="background:var(--bg4);padding:2px 8px;border-radius:3px;font-size:0.85rem;border:1px solid var(--border);">[{{ guild.get('tag','—') }}]</code></td></tr>
+        <tr><th>Leader</th><td>👑 {{ guild.get('leader_name','—') }}</td></tr>
+        <tr><th>Level</th><td>{{ guild.get('level','—') }}</td></tr>
+        <tr><th>Experience</th><td>{{ "{:,}".format(guild.get('experience',0)|int) }}</td></tr>
+        <tr><th>Members</th><td>{{ guild.get('member_count','—') }} total / {{ guild.get('elder_count','0') }} elders</td></tr>
+        <tr><th>Your Role</th><td>
+          {% set role = guild.get('your_role','member') %}
+          {% if role == 'leader' %}<span class="badge badge-gold">👑 Leader</span>
+          {% elif role == 'elder' %}<span class="badge badge-blue">🌟 Elder</span>
+          {% else %}<span class="badge badge-green">⚔️ Member</span>{% endif %}
+        </td></tr>
+        <tr><th>Visibility</th><td>{{ '✅ Public' if guild.get('is_public') else '🔒 Private' }}</td></tr>
+      </table>
+      {% if guild.get('description') %}
+      <div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--gold);font-style:italic;color:var(--text2);font-size:0.88rem;">
+        "{{ guild.get('description') }}"
+      </div>
+      {% endif %}
+    </div>
+
+    {# Guild Chat #}
+    <div class="card">
+      <div class="card-title">💬 Guild Chat</div>
+      {% set msgs = messages.get('messages', []) %}
+      {% if msgs %}
+      <div id="guild-chat-messages" style="max-height:300px;overflow-y:auto;margin-bottom:12px;">
+        {% for m in msgs %}
+        <div class="chat-msg">
+          <span class="chat-sender">{{ m.get('sender','?') }}</span>
+          <div class="chat-text">{{ m.get('message','') }}</div>
+          <div class="chat-time" data-ts="{{ m.get('time_created','') }}"></div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:20px;"><div class="icon" style="font-size:1.5rem;">💬</div><p>No messages.</p></div>
+      {% endif %}
+
+      {# Send guild message #}
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" id="guild-msg-input" placeholder="Send a message to guild..." style="flex:1;" maxlength="200" onkeydown="if(event.key==='Enter')sendGuildMsg()">
+        <button class="btn-primary" style="white-space:nowrap;padding:8px 16px;" onclick="sendGuildMsg()">Send ↵</button>
+      </div>
+    </div>
+  </div>
+
+  {# Roster #}
+  <div class="card">
+    <div class="card-title">👥 Roster ({{ roster.get('members', [])|length }})</div>
+    {% set members = roster.get('members', []) %}
+    {% if members %}
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Class</th>
+            <th>Level</th>
+            <th>Role</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in members|sort(attribute='level', reverse=true) %}
+          <tr>
+            <td style="font-weight:600;{% if m.get('username','').lower() == session.get('username','').lower() %}color:var(--gold2);{% endif %}">
+              {{ m.get('username','—') }}
+              {% if m.get('username','').lower() == session.get('username','').lower() %}
+              <span class="badge badge-gold" style="font-size:0.6rem;margin-left:4px;">You</span>
+              {% endif %}
+            </td>
+            <td>{{ class_icons.get(m.get('class',''),'⚔️') }} {{ m.get('class','—')|title }}</td>
+            <td><strong style="color:var(--gold2)">{{ m.get('level','—') }}</strong></td>
+            <td>
+              {% set role = m.get('role','member') %}
+              {% if role == 'leader' %}<span class="badge badge-gold">👑</span>
+              {% elif role == 'elder' %}<span class="badge badge-blue">🌟</span>
+              {% else %}<span class="badge badge-green" style="font-size:0.65rem;">⚔️</span>{% endif %}
+            </td>
+            <td style="font-size:0.78rem;color:var(--text2);">{{ m.get('last_played_on','—') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">👥</div><p>No members.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+// Timestamp format
+document.querySelectorAll('.chat-time[data-ts]').forEach(el => {
+  const ts = parseInt(el.dataset.ts, 10);
+  if (!isNaN(ts) && ts > 0) el.textContent = new Date(ts * 1000).toLocaleString();
+});
+
+// Scroll guild chat to bottom
+const gc = document.getElementById('guild-chat-messages');
+if (gc) gc.scrollTop = gc.scrollHeight;
+
+async function sendGuildMsg() {
+  const input = document.getElementById('guild-msg-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const btn = input.nextElementSibling;
+  btn.disabled = true;
+  const res = await apiAction('/action/send_guild_chat', { message: msg });
+  if (res.status === 'success') {
+    toast('✅ Message sent!');
+    input.value = '';
+    setTimeout(() => location.reload(), 600);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+  }
+  btn.disabled = false;
+}
+</script>
+{% endblock %}

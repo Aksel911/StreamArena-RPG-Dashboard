@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Global Chat{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">💬 Global Chat</div>
+    <div class="page-subtitle">{{ messages.get('messages', [])|length }} messages loaded</div>
+  </div>
+</div>
+
+<div class="card" style="max-width:720px; margin: auto;">
+  <div class="card-title">📢 Live Messages</div>
+  {% set msgs = messages.get('messages', []) %}
+  {% if msgs %}
+  <div id="chat-messages" style="max-height:500px;overflow-y:auto;margin-bottom:14px;">
+    {% for m in msgs %}
+    {% set sender = m.get('username','?') %}
+    {% set is_dev = '[Dev]' in sender %}
+    {% set is_streamer = '[Streamer]' in sender %}
+    <div class="chat-msg" style="{% if is_dev %}background:rgba(100,100,255,0.04);{% elif is_streamer %}background:rgba(255,100,150,0.04);{% endif %}padding:10px 8px;border-radius:5px;">
+      <span class="chat-sender {% if is_dev %}dev{% elif is_streamer %}streamer{% endif %}">
+        {% if is_dev %}🔧{% elif is_streamer %}🎥{% else %}⚔️{% endif %}
+        {{ sender }}
+      </span>
+      <div class="chat-text">{{ m.get('message', '') }}</div>
+      <div class="chat-time" data-ts="{{ m.get('time_created','') }}"></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:30px;"><div class="icon">💬</div><p>No chat messages.</p></div>
+  {% endif %}
+
+  {# Send message #}
+  <div style="border-top:1px solid var(--border);padding-top:14px;">
+    <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">
+      Send Global Message
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="chat-input" placeholder="Type your message..." style="flex:1;" maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn-primary" style="white-space:nowrap;padding:8px 18px;" onclick="sendChat()">Send ↵</button>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text3);margin-top:5px;">Max 200 characters</div>
+  </div>
+</div>
+
+<script>
+// Convert timestamps + scroll to bottom
+document.querySelectorAll('.chat-time[data-ts]').forEach(el => {
+  const ts = parseInt(el.dataset.ts, 10);
+  if (!isNaN(ts) && ts > 0) el.textContent = new Date(ts * 1000).toLocaleString();
+});
+const chat = document.getElementById('chat-messages');
+if (chat) chat.scrollTop = chat.scrollHeight;
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const btn = input.nextElementSibling;
+  btn.disabled = true;
+  const res = await apiAction('/action/send_chat', { message: msg });
+  if (res.status === 'success') {
+    toast('✅ Message sent!');
+    input.value = '';
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed to send'), false);
+  }
+  btn.disabled = false;
+}
+</script>
+{% endblock %}
