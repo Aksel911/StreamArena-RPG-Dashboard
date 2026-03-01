@@ -54,12 +54,10 @@ Open **http://127.0.0.1:5000** in your browser, paste your token, done.
 
 ## 🔑 Getting Your Token
 
-1. Go to **[streamarenarpg.com/auth.html](https://streamarenarpg.com/auth.html)**
+1. Go to [StreamArena Auth Portal](https://streamarenarpg.com/auth.html)
 2. Login with Twitch
-3. Open **DevTools → Network** tab (`F12`)
-4. Find any request to `portal_api.php` — check the request payload
-5. Copy the `token` value
-6. Paste it on the dashboard login page
+3. Copy your `token` 
+4. Paste it on the dashboard login page
 
 > ⚠️ **Your token grants full account access. Never share it.**
 
@@ -256,7 +254,6 @@ StreamArena-RPG-Dashboard/
 Everything is at the top of `app.py`:
 
 ```python
-API_VERSION    = '0.32.03'               # Update if game API version changes
 CACHE_TTL      = 300                      # Seconds before udata cache expires (5 min)
 CACHE_DIR      = '/tmp/streamarena_cache' # Cache directory — change for production
 app.secret_key = 'streamarena_secret_2026' # Change to a random string in production!

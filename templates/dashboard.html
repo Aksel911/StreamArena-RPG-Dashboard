@@ -59,7 +59,7 @@
 <div class="grid-2">
   {# ── Character Card ───────────────────────────── #}
   <div class="card">
-    <div class="card-title">🧝 Character</div>
+    <div class="card-title-character">🧝 Character</div>
     {% if char %}
     <table>
       <tr><th>Class</th><td>{{ class_icons.get(char.get('class',''), '⚔️') }} {{ char.get('class', '—')|title }}</td></tr>
@@ -69,8 +69,8 @@
         <td>
           <div>{{ "{:,}".format(exp) }} XP</div>
           <div style="margin-top:4px;">
-            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text3);margin-bottom:2px;">
-              <span>→ Lv.{{ level + 1 }}</span><span style="color:var(--gold);">{{ exp_pct }}%</span>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:var(--text2);margin-bottom:2px;">
+              <span>To level → {{ level + 1 }}</span><span style="color:var(--gold);">{{ exp_pct }}%</span>
             </div>
             <div class="power-bar" style="height:4px;">
               <div class="power-bar-fill" style="width:{{ exp_pct }}%;background:linear-gradient(90deg,var(--gold),var(--gold3))"></div>
@@ -83,7 +83,7 @@
         <td><span style="font-family:'JetBrains Mono',monospace;background:var(--bg4);padding:2px 8px;border-radius:3px;font-size:0.82rem;border:1px solid var(--border);">#{{ char.get('slot', '—') }}</span></td>
       </tr>
       <tr>
-        <th>⏳ Game Time</th>
+        <th>Game Time</th>
         <td>
           <span style="color:var(--teal2);">{{ (char.get('game_time', 0)|int // 3600) }}h</span>
           <span style="color:var(--text2);"> {{ ((char.get('game_time', 0)|int % 3600) // 60) }}m</span>
@@ -106,10 +106,10 @@
     <div class="card-title">🏰 Guild Status</div>
     {% if udata.get('guild_id') and udata.get('guild_id')|int > 0 %}
     <div style="margin-bottom:12px;">
-      <div style="font-size:0.75rem;color:var(--text3);letter-spacing:0.05em;margin-bottom:3px;">GUILD ID</div>
-      <div style="font-size:0.9rem;color:var(--text2);">ID: <strong style="color:var(--gold)">{{ udata.get('guild_id') }}</strong></div>
-      {% if guild_name %}
-      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--gold2);margin-top:4px;">🏰 {{ guild_name }}</div>
+      <div style="font-size:0.75rem;color:var(--text3);letter-spacing:0.05em;margin-bottom:3px;">GUILD ID: {{ udata.get('guild_id') }}</div>
+      {#<div style="font-size:0.9rem;color:var(--text2);">ID: <strong style="color:var(--gold)">{{ udata.get('guild_id') }}</strong></div>#}
+      {% if guild_name and guild_tag %}
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--gold2);margin-top:4px;">🏰 {{ guild_name }} [{{ guild_tag }}]</div>
       {% endif %}
     </div>
     <a href="{{ url_for('guild') }}" class="btn-primary" style="text-decoration:none;display:inline-block;">View Guild →</a>

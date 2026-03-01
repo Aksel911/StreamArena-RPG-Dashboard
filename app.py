@@ -12,8 +12,7 @@ app.secret_key = 'streamarena_secret_2026'
 
 API_URL       = 'https://streamarenarpg.com/portal/portal_api.php'
 GUILD_API_URL = 'https://streamarenarpg.com/guild/guild_api.php'
-API_VERSION   = '0.32.03'  # Update when game updates
-
+API_VERSION   = '1.0.0'
 HEADERS = {
     'Content-Type': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
@@ -239,9 +238,10 @@ def dashboard():
     guild_name = None
     if guild_id and results.get('guild_info'):
         guild_name = results['guild_info'].get('guild', {}).get('name')
+        guild_tag = results['guild_info'].get('guild', {}).get('tag')
 
     return render_template('dashboard.html',
-        udata=udata, guild_name=guild_name,
+        udata=udata, guild_name=guild_name, guild_tag=guild_tag,
         mail=results['mail'], spin=results['spin'], streamer=results['streamer'],
         consumables=results['consumables'], skills=results['skills'],
         chests=results['chests'],

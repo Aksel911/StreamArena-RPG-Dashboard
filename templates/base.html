@@ -4,6 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}StreamArena RPG{% endblock %} — Portal</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/static/favicon/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon/favicon-32x32.png">
+  
+  <!-- Android Chrome Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/favicon/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/favicon/android-chrome-512x512.png">
+  
+  <!-- Apple Touch Icon -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/favicon/apple-touch-icon.png">
+  
+  <!-- Web Manifest -->
+  <link rel="manifest" href="/static/favicon/site.webmanifest">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -203,7 +219,7 @@
       transition: border-color 0.2s;
       display: grid;
     }
-    
+
     .card:hover { border-color: var(--border2); }
     .card-title {
       font-family: 'Cinzel', serif;
@@ -220,6 +236,23 @@
       flex: 1; height: 1px;
       background: linear-gradient(90deg, var(--border2) 0%, transparent 100%);
     }
+
+    .card-title-character {
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-top: -70px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card-title-character::after {
+      content: '';
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border2) 0%, transparent 100%);
+    }
+
 
     /* ─ Grid layouts ─ */
     .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
