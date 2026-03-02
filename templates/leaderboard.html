@@ -21,7 +21,7 @@
 <div class="grid-2">
   {# Top 25 #}
   <div class="card" style="grid-column:1/-1;">
-    <div class="card-title">🥇 Top 25 Players</div>
+    <div class="card-title">🎖️ Top 25 Players</div>
     {% set top25 = top.get('top_25', []) %}
     {% if top25 %}
     <div style="overflow-x:auto;">
@@ -75,7 +75,12 @@
     <div style="padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;display:flex;justify-content:space-between;align-items:center;">
       <div>
         <span style="font-size:0.72rem;color:var(--text3);font-family:'Cinzel',serif;">#{{ p.get('rank','?') }}</span>
-        <div style="font-size:0.85rem;font-weight:600;{% if p.get('username') == session.get('username') %}color:var(--gold2){% endif %}">{{ p.get('username','—') }}</div>
+        <div style="font-size:0.85rem;font-weight:600;{% if p.get('username') == session.get('username') %}color:var(--gold2);{% endif %}">
+            {{ p.get('username','—') }}
+            {% if p.get('username') == session.get('username') %}
+                <span class="badge badge-gold" style="font-size:0.6rem;margin-left:4px;">You</span>
+            {% endif %}
+        </div>
         <div style="font-size:0.72rem;color:var(--text3);">{{ class_icons.get(p.get('class',''),'') }} {{ p.get('class','—')|title }}</div>
       </div>
       <strong style="color:var(--gold2);font-family:'Cinzel',serif;">{{ p.get('level','—') }}</strong>

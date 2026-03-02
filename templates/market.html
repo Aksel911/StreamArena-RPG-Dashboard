@@ -9,9 +9,9 @@
   </div>
   {# Player balance #}
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-    <span class="currency-gold" style="font-size:0.85rem;">🥇 {{ "{:,}".format(player_gold) }}</span>
-    <span class="currency-plat" style="font-size:0.85rem;">💎 {{ player_plat }}</span>
-    <span class="currency-gem"  style="font-size:0.85rem;">💠 {{ player_gems }}</span>
+    <span class="currency-gold" style="font-size:0.85rem;">🪙 {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat" style="font-size:0.85rem;">🪨 {{ player_plat }}</span>
+    <span class="currency-gem"  style="font-size:0.85rem;">💎 {{ player_gems }}</span>
   </div>
 </div>
 
@@ -41,10 +41,10 @@
         <option value="default"    {% if request.args.get('sort','default')=='default'    %}selected{% endif %}>Default</option>
         <option value="power_desc" {% if request.args.get('sort')=='power_desc' %}selected{% endif %}>✨ Power ↓ (best first)</option>
         <option value="power_asc"  {% if request.args.get('sort')=='power_asc'  %}selected{% endif %}>✨ Power ↑ (worst first)</option>
-        <option value="gold_asc"   {% if request.args.get('sort')=='gold_asc'   %}selected{% endif %}>🥇 Gold ↑ (cheapest)</option>
-        <option value="gold_desc"  {% if request.args.get('sort')=='gold_desc'  %}selected{% endif %}>🥇 Gold ↓ (most expensive)</option>
-        <option value="plat_asc"   {% if request.args.get('sort')=='plat_asc'   %}selected{% endif %}>💎 Plat ↑ (cheapest)</option>
-        <option value="plat_desc"  {% if request.args.get('sort')=='plat_desc'  %}selected{% endif %}>💎 Plat ↓ (most expensive)</option>
+        <option value="gold_asc"   {% if request.args.get('sort')=='gold_asc'   %}selected{% endif %}>🪙 Gold ↑ (cheapest)</option>
+        <option value="gold_desc"  {% if request.args.get('sort')=='gold_desc'  %}selected{% endif %}>🪙 Gold ↓ (most expensive)</option>
+        <option value="plat_asc"   {% if request.args.get('sort')=='plat_asc'   %}selected{% endif %}>🪨 Plat ↑ (cheapest)</option>
+        <option value="plat_desc"  {% if request.args.get('sort')=='plat_desc'  %}selected{% endif %}>🪨 Plat ↓ (most expensive)</option>
         <option value="value_desc" {% if request.args.get('sort')=='value_desc' %}selected{% endif %}>⚡ Best Power/Price</option>
       </select>
     </div>
@@ -85,7 +85,15 @@
             </div>
             <div style="margin:4px 0;">
               <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text2);">
-                <span>✨ Power</span>
+                {% if item.get('slot') == 'weapon' %}<span>✨ Damage</span>
+                {% elif item.get('slot') == 'off_hand' %}<span>✨ Armor</span>
+                {% elif item.get('slot') == 'head' %}<span>✨ HP</span>
+                {% elif item.get('slot') == 'body' %}<span>✨ HP</span>
+                {% elif item.get('slot') == 'hands' %}<span>✨ A. Speed</span>
+                {% elif item.get('slot') == 'feet' %}<span>✨ M. Speed</span>
+                {% elif item.get('slot') == 'ring' %}<span>✨ Ring Bonus</span>
+                {% elif item.get('slot') == 'neck' %}<span>✨ Neck Bonus</span>
+                {% endif %}
                 <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% elif power_pct >= 15 %}var(--gold2){% else %}var(--teal2){% endif %}">
                   {{ "%.2f"|format(power_pct) }}%
                 </span>
@@ -99,19 +107,15 @@
             {% if ep.get('extra') %}<span class="item-extra" style="font-size:0.68rem;">✦ {{ ep.get('extra') }}</span>{% endif %}
             {% if ep.get('range') %}<span class="item-extra" style="color:var(--blue2);font-size:0.68rem;">🎯 {{ ep.get('range') }}</span>{% endif %}
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">
-              {% if plat > 0 %}<span class="currency-plat" style="font-size:0.82rem;">💎 {{ plat }}</span>{% endif %}
-              {% if gold > 0 %}<span class="currency-gold" style="font-size:0.82rem;">🥇 {{ "{:,}".format(gold) }}</span>{% endif %}
-              {% if gem  > 0 %}<span class="currency-gem"  style="font-size:0.82rem;">💠 {{ gem }}</span>{% endif %}
+              {% if plat > 0 %}<span class="currency-plat" style="font-size:0.82rem;">🪨 {{ plat }}</span>{% endif %}
+              {% if gold > 0 %}<span class="currency-gold" style="font-size:0.82rem;">🪙 {{ "{:,}".format(gold) }}</span>{% endif %}
+              {% if gem  > 0 %}<span class="currency-gem"  style="font-size:0.82rem;">💎 {{ gem }}</span>{% endif %}
               {% if plat == 0 and gold == 0 and gem == 0 %}<span style="font-size:0.75rem;color:var(--text3);">Free?</span>{% endif %}
               <span style="font-size:0.65rem;color:var(--text3);">exp: {{ item.get('time_expires','')[:10] }}</span>
             </div>
             {# Purchase button #}
             <div style="margin-top:8px;">
-              <button class="btn-sm"
-                style="background:rgba(50,180,100,0.15);border:1px solid rgba(50,180,100,0.4);color:#5ade90;border-radius:4px;font-size:0.72rem;padding:4px 12px;cursor:pointer;"
-                onclick="buyItem({{ item.get('id') }}, {{ gold }}, {{ plat }}, {{ gem }}, '{{ item.get('item_name','?')|replace("'","") }}')">
-                🛒 Purchase
-              </button>
+              <button class="btn-sm btn-outline-teal" onclick="buyItem({{ item.get('id') }}, {{ gold }}, {{ plat }}, {{ gem }}, '{{ item.get('item_name','?')|replace("'","") }}')">🛒 Purchase</button>
             </div>
           </div>
         </div>
@@ -138,16 +142,32 @@
           <div style="flex:1;min-width:0;">
             <div style="font-size:0.88rem;font-weight:600;">{{ item.get('item_name','?') }}</div>
             <div style="font-size:0.75rem;margin:3px 0;">
-              <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% else %}var(--teal2){% endif %}">✨ {{ "%.2f"|format(power_pct) }}%</span>
+              {% set bonus_text %}
+                  {% if item.get('slot') == 'weapon' %}Damage:
+                  {% elif item.get('slot') == 'off_hand' %}Armor:
+                  {% elif item.get('slot') == 'head' %}HP:
+                  {% elif item.get('slot') == 'body' %}HP:
+                  {% elif item.get('slot') == 'hands' %}A. Speed:
+                  {% elif item.get('slot') == 'feet' %}M. Speed:
+                  {% elif item.get('slot') == 'ring' %}Ring Bonus:
+                  {% elif item.get('slot') == 'neck' %}Neck Bonus:
+                  {% else %}Bonus:
+                  {% endif %}
+              {% endset %}
+              <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% else %}var(--teal2){% endif %}">
+                  ✨ {{ bonus_text }} {{ "%.2f"|format(power_pct) }}%
+              </span>
             </div>
             {% if ep.get('extra') %}<span class="item-extra" style="font-size:0.68rem;">✦ {{ ep.get('extra') }}</span>{% endif %}
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">
-              {% if item.get('platinum_cost','0')|int > 0 %}<span class="badge badge-blue" style="font-size:0.68rem;">💎 {{ item.get('platinum_cost') }}</span>{% endif %}
-              {% if item.get('gold_cost','0')|int > 0    %}<span class="badge badge-gold" style="font-size:0.68rem;">🥇 {{ "{:,}".format(item.get('gold_cost','0')|int) }}</span>{% endif %}
-              {% if item.get('gem_cost','0')|int > 0     %}<span class="badge badge-blue" style="font-size:0.68rem;">💠 {{ item.get('gem_cost') }}</span>{% endif %}
+              {% if item.get('platinum_cost','0')|int > 0 %}<span class="badge badge-blue" style="font-size:0.68rem;">🪨 {{ item.get('platinum_cost') }}</span>{% endif %}
+              {% if item.get('gold_cost','0')|int > 0    %}<span class="badge badge-gold" style="font-size:0.68rem;">🪙 {{ "{:,}".format(item.get('gold_cost','0')|int) }}</span>{% endif %}
+              {% if item.get('gem_cost','0')|int > 0     %}<span class="badge badge-blue" style="font-size:0.68rem;">💎 {{ item.get('gem_cost') }}</span>{% endif %}
             </div>
             <div style="font-size:0.68rem;color:var(--text3);margin-top:2px;">⏳ {{ item.get('time_expires','')[:10] }}</div>
           </div>
+          <button class="btn-sm btn-danger" style="flex-shrink:0;align-self:center;"
+                  onclick="cancelListing({{ item.get('id',0) }}, '{{ item.get('item_name','Item') }}')">✕ Cancel</button>
         </div>
         {% endfor %}
       </div>
@@ -168,9 +188,34 @@
           <div style="font-size:0.72rem;color:var(--text3);">{{ chest.get('drop_min') }}–{{ chest.get('drop_max') }} drops</div>
         </div>
         <div style="text-align:right;font-size:0.8rem;">
-          {% if chest.get('gold_cost','0')|int > 0     %}<div class="currency-gold">🥇 {{ "{:,}".format(chest.get('gold_cost','0')|int) }}</div>{% endif %}
-          {% if chest.get('gem_cost','0')|int > 0      %}<div class="currency-gem">💠 {{ chest.get('gem_cost') }}</div>{% endif %}
-          {% if chest.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">💎 {{ chest.get('platinum_cost') }}</div>{% endif %}
+
+          <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;">
+          {# Проверяем, есть ли хоть одна ненулевая цена #}
+          {% if chest.get('gold_cost', 0)|int > 0 or chest.get('gem_cost', 0)|int > 0 or chest.get('platinum_cost', 0)|int > 0 %}
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  {% if chest.get('gold_cost', 0)|int > 0 %}
+                      <button class="btn-sm btn-primary-sm" style="font-family: var(--font-sans);"
+                              onclick="buyChest({{ chest.get('chest_id',0) }}, 'standard', {{ chest.get('display_name','?')|tojson }}, {{ chest.get('gold_cost',0)|int }}, 0, 0)">
+                          🛒 Buy 🪙 {{ "{:,}".format(chest.get('gold_cost',0)|int) }} (Gold)
+                      </button>
+                  {% endif %}
+                  {% if chest.get('platinum_cost', 0)|int > 0 %}
+                      <button class="btn-sm btn-outline-teal"
+                              onclick="buyChest({{ chest.get('chest_id',0) }}, 'platinum', {{ chest.get('display_name','?')|tojson }}, 0, {{ chest.get('platinum_cost',0)|int }}, 0)">
+                          🛒 Buy 🪨 {{ chest.get('platinum_cost',0)|int }} (Platinum)
+                      </button>
+                  {% endif %}
+                  {% if chest.get('gem_cost', 0)|int > 0 %}
+                      <button class="btn-sm btn-outline-blue"
+                              onclick="buyChest({{ chest.get('chest_id',0) }}, 'gems', {{ chest.get('display_name','?')|tojson }}, 0, 0, {{ chest.get('gem_cost',0)|int }})">
+                          🛒 Buy 💎 {{ chest.get('gem_cost',0)|int }} (Gems)
+                      </button>
+                  {% endif %}
+              </div>
+          {% else %}
+              <div style="padding:8px; background:var(--bg4); border-radius:4px; color:var(--text3); text-align:center; font-size:0.85rem;">The product is not for sale</div>
+          {% endif %}
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -190,15 +235,15 @@
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px;">
       <div style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text3);letter-spacing:0.1em;margin-bottom:10px;">YOUR BALANCE</div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
-        <span class="currency-gold">🥇 Gold</span>
+        <span class="currency-gold">🪙 Gold</span>
         <span class="currency-gold" id="bal-gold">{{ "{:,}".format(player_gold) }}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
-        <span class="currency-plat">💎 Platinum</span>
+        <span class="currency-plat">🪨 Platinum</span>
         <span class="currency-plat" id="bal-plat">{{ player_plat }}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;">
-        <span class="currency-gem">💠 Gems</span>
+        <span class="currency-gem">💎 Gems</span>
         <span class="currency-gem" id="bal-gems">{{ player_gems }}</span>
       </div>
     </div>
@@ -231,9 +276,9 @@ function buyItem(id, gold, plat, gems, name) {
 
   // Build cost breakdown
   let html = '';
-  if (gold > 0) html += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>🥇 Gold</span><span class="currency-gold">${gold.toLocaleString()}</span></div>`;
-  if (plat > 0) html += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>💎 Platinum</span><span class="currency-plat">${plat}</span></div>`;
-  if (gems > 0) html += `<div style="display:flex;justify-content:space-between;"><span>💠 Gems</span><span class="currency-gem">${gems}</span></div>`;
+  if (gold > 0) html += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>🪙 Gold</span><span class="currency-gold">${gold.toLocaleString()}</span></div>`;
+  if (plat > 0) html += `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>🪨 Platinum</span><span class="currency-plat">${plat}</span></div>`;
+  if (gems > 0) html += `<div style="display:flex;justify-content:space-between;"><span>💎 Gems</span><span class="currency-gem">${gems}</span></div>`;
   if (!html)    html  = '<span style="color:var(--teal2);">Free!</span>';
   document.getElementById('buy-cost-breakdown').innerHTML = html;
 
@@ -266,6 +311,36 @@ async function confirmBuy() {
 document.getElementById('buy-modal').addEventListener('click', function(e) {
   if (e.target === this) closeBuyModal();
 });
+
+// ── Cancel listing ────────────────────────────────────────────────
+async function cancelListing(itemId, name) {
+  if (!confirm(`Remove "${name}" from market?`)) return;
+  const res = await apiAction('/action/cancel_listing', {item_id: itemId});
+  if (res.status === 'success') {
+    toast('✅ Listing cancelled!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+  }
+}
+
+// ── Buy chest from market page ────────────────────────────────────
+async function buyChest(chestId, currency, name, gold, plat, gems) {
+  const cost = currency === 'standard' ? `🪙 ${gold.toLocaleString()} Gold`
+             : currency === 'gems'     ? `💎 ${gems} Gems`
+             :                           `🪨 ${plat} Platinum`;
+  if (!confirm(`Buy "${name}" for ${cost}?`)) return;
+  const res = await apiAction('/action/buy_chest', {chest_id: chestId, currency});
+  if (res.status === 'success') {
+    const drops = res.chest_drops || [];
+    const items = drops.filter(d => d.type === 'item').length;
+    const cons  = drops.filter(d => d.type === 'consumable').length;
+    toast(`✅ Chest bought! Got ${items} item${items!==1?'s':''}, ${cons} consumable${cons!==1?'s':''}`);
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Purchase failed'), false);
+  }
+}
 
 // Client-side sort
 const sortSel = document.getElementById('sort-select');

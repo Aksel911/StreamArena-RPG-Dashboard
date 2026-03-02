@@ -29,15 +29,15 @@
 <div class="grid-4" style="margin-bottom:20px;">
   <div class="stat-box">
     <div class="val currency-gold">{{ "{:,}".format(user.get('gold', 0)|int) }}</div>
-    <div class="lbl">🥇 Gold</div>
+    <div class="lbl">🪙 Gold</div>
   </div>
   <div class="stat-box">
     <div class="val currency-plat">{{ user.get('platinum', 0) }}</div>
-    <div class="lbl">💎 Platinum</div>
+    <div class="lbl">🪨 Platinum</div>
   </div>
   <div class="stat-box">
     <div class="val currency-gem">{{ user.get('gems', 0) }}</div>
-    <div class="lbl">💠 Gems</div>
+    <div class="lbl">💎 Gems</div>
   </div>
   <div class="stat-box">
     <div class="val">
@@ -204,7 +204,7 @@
           <div style="font-size:0.88rem;font-weight:600;">{{ chest.get('display_name', '?') }}</div>
           <div style="font-size:0.72rem;color:var(--text3);">x{{ chest.get('amount', 0) }}</div>
         </div>
-        <div style="font-size:0.78rem;color:var(--blue2);">{{ chest.get('gem_cost', 0) }} 💠</div>
+        <div style="font-size:0.78rem;color:var(--blue2);">{{ chest.get('gem_cost', 0) }} 💎</div>
       </div>
       {% endfor %}
     </div>

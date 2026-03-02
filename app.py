@@ -395,10 +395,16 @@ def cosmetics():
         'shaders':      {'route':'get_shaders'},
         'backs':        {'route':'get_backs'},
         'consumables':  {'route':'get_player_consumables'},
+        'player_chests':{'route':'get_player_chests'},
+        'game_chests':  {'route':'get_chests'},
+        'inv_data':     {'route':'get_inv','page':1},
     })
-    shaders      = results['shaders']
-    backs        = results['backs']
-    consumables  = results['consumables']
+    shaders        = results['shaders']
+    backs          = results['backs']
+    consumables    = results['consumables']
+    player_chests  = results['player_chests']
+    game_chests    = results['game_chests']
+    balance_user   = results['inv_data'].get('user', {})
 
     shaders_by_id = {str(s['id']): s for s in shaders.get('shaders',[])}
     backs_by_id   = {str(b['id']): b for b in backs.get('back_items',[])}
@@ -426,7 +432,13 @@ def cosmetics():
         owned_backs=owned_backs,
         equipped_back_id=str(char.get('back_equip','-1')),
         shaders_by_id=shaders_by_id,
-        backs_by_id=backs_by_id)
+        backs_by_id=backs_by_id,
+        player_chests=player_chests,
+        game_chests=game_chests,
+        player_gold=int(balance_user.get('gold',0)),
+        player_plat=int(balance_user.get('platinum',0)),
+        player_gems=int(balance_user.get('gems',0)),
+        slot_icons=SLOT_ICONS)
 
 # ── Bosses ────────────────────────────────────────────────────────────────────
 @app.route('/bosses')
@@ -579,6 +591,31 @@ def action_equip_consumable():
         'consumable_id': consumable_id,
         'slot': slot,
     }))
+
+
+@app.route('/action/open_chest', methods=['POST'])
+def action_open_chest():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route':'open_player_chest','chest_id':int(d.get('chest_id',0))}))
+
+@app.route('/action/open_multi_chest', methods=['POST'])
+def action_open_multi_chest():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route':'open_multi_player_chests','chest_id':int(d.get('chest_id',0))}))
+
+@app.route('/action/buy_chest', methods=['POST'])
+def action_buy_chest():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route':'buy_chest','chest_id':int(d.get('chest_id',0)),'currency':d.get('currency','standard')}))
+
+@app.route('/action/cancel_listing', methods=['POST'])
+def action_cancel_listing():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route':'cancel_listing','item_id':int(d.get('item_id',0))}))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

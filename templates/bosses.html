@@ -49,7 +49,7 @@
         <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;">
           {% for reward in boss.get('rewards',[]) %}
           <span class="badge {% if reward[0]=='platinum' %}badge-blue{% elif reward[0]=='gem' %}badge-blue{% elif reward[0]=='chest' %}badge-green{% else %}badge-gold{% endif %}" style="font-size:0.7rem;">
-            {% if reward[0]=='platinum' %}💎{% elif reward[0]=='gem' %}💠{% elif reward[0]=='chest' %}📦{% elif reward[0]=='consumable' %}🧪{% else %}🎁{% endif %}
+            {% if reward[0]=='platinum' %}🪨{% elif reward[0]=='gem' %}💎{% elif reward[0]=='chest' %}📦{% elif reward[0]=='consumable' %}🧪{% else %}🎁{% endif %}
             {{ reward[1] }}{% if reward|length > 2 %} ×{{ reward[2] }}{% endif %}
           </span>
           {% endfor %}

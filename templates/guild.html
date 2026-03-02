@@ -116,9 +116,9 @@
             <td><strong style="color:var(--gold2)">{{ m.get('level','—') }}</strong></td>
             <td>
               {% set role = m.get('role','member') %}
-              {% if role == 'leader' %}<span class="badge badge-gold">👑</span>
-              {% elif role == 'elder' %}<span class="badge badge-blue">🌟</span>
-              {% else %}<span class="badge badge-green" style="font-size:0.65rem;">⚔️</span>{% endif %}
+              {% if role == 'leader' %}<span class="badge badge-gold">👑 Leader</span>
+              {% elif role == 'elder' %}<span class="badge badge-blue">🌟 Elder</span>
+              {% else %}<span class="badge badge-green" style="font-size:0.65rem;">⚔️ Member</span>{% endif %}
             </td>
             <td style="font-size:0.78rem;color:var(--text2);">{{ m.get('last_played_on','—') }}</td>
           </tr>

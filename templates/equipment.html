@@ -26,10 +26,10 @@
       <div style="background:var(--bg3);border:1px solid {% if item %}rgba(201,168,76,0.35){% else %}var(--border){% endif %};border-radius:8px;padding:14px;position:relative;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span style="font-size:1.3rem;">{{ slot_icons.get(slot,'❓') }}</span>
-          <span style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;">{{ slot.replace('_',' ') }}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;">{{ slot.replace('_',' ') }}</span>
         </div>
         {% if item %}
-        <div style="font-size:0.92rem;font-weight:600;color:var(--text);margin-bottom:6px;">{{ item.get('item_name','?') }}</div>
+        <div style="font-size:0.92rem;font-weight:600;color:var(--text);margin-bottom:6px;" data-label="name">{{ item.get('item_name','?') }}</div>
         <div style="margin-bottom:6px;">
           <div class="power-bar-label">
           {% if item.get('slot') == 'weapon' %}
@@ -71,7 +71,7 @@
         <div style="font-family:'JetBrains Mono',monospace;font-size:0.63rem;color:var(--text3);margin-bottom:8px;">#{{ item.get('id','?') }}</div>
         <button class="btn-sm btn-danger" style="width:100%;" onclick="unequipSlot('{{ slot }}')">🔓 Unequip</button>
         {% else %}
-        <div style="color:var(--text3);font-size:0.82rem;font-style:italic;margin-bottom:8px;">— Empty —</div>
+        <div style="color:var(--text3);font-size:0.82rem;font-style:italic;margin-bottom:8px;text-align:center;">— Empty —</div>
         <button class="btn-sm" style="width:100%;background:var(--bg4);border:1px dashed var(--border);color:var(--text3);cursor:pointer;" onclick="openEquipModal('{{ slot }}')">+ Equip Item</button>
         {% endif %}
       </div>
@@ -96,8 +96,8 @@
             <div>{{ "{:,}".format(exp) }} XP</div>
             <div style="margin-top:5px;">
               <div class="power-bar-label">
-                <span style="font-size:0.7rem;color:var(--text3);">→ Lv.{{ level+1 }}</span>
-                <span style="font-size:0.7rem;color:var(--gold);">{{ exp_pct }}%</span>
+                <span style="font-size:0.9rem;color:var(--text2);">To level → {{ level+1 }}</span>
+                <span style="font-size:0.9rem;color:var(--gold);">{{ exp_pct }}%</span>
               </div>
               <div class="power-bar" style="height:5px;">
                 <div class="power-bar-fill" style="width:{{ exp_pct }}%;background:linear-gradient(90deg,var(--gold),var(--gold3))"></div>
@@ -194,7 +194,7 @@
     {% for item in all_inv %}
     {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
     {% set is_equipped = (item.get('id','')|string) in equipped_ids %}
-    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}" data-power="{{ (item.get('power',0)|float * 100)|round(2) }}" data-name="{{ item.get('item_name','')|lower }}"
+    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}" data-power="{{ (item.get('power',0)|float * 100)|round(2) }}" data-name="{{ item.get('item_name','')|lower }}" data-item-id="{{ item.get('id','') }}" data-equipped="{{ 'true' if is_equipped else 'false' }}"
          style="{% if is_equipped %}border-color:var(--gold);background:rgba(201,168,76,0.07);{% endif %}cursor:pointer;"
          onclick="handleInvClick({{ item.get('id') }}, '{{ item.get('slot','') }}', {{ 'true' if is_equipped else 'false' }}, '{{ item.get('item_name','') }}')">
       {% if is_equipped %}
@@ -242,21 +242,16 @@
 </div>
 
 {# ── Equip slot picker modal ─────────────────────────────────── #}
-<div id="equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;min-width:320px;max-width:420px;width:90%;">
-    <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);margin-bottom:6px;" id="equip-modal-title">Equip Item</div>
-    <div style="font-size:0.82rem;color:var(--text3);margin-bottom:16px;" id="equip-modal-sub"></div>
-    <div style="margin-bottom:14px;">
-      <label style="display:block;font-size:0.78rem;color:var(--text3);margin-bottom:5px;letter-spacing:0.05em;">EQUIP TO SLOT</label>
-      <select id="equip-slot-select">
-        {% for s in ['any','weapon','off_hand','head','body','hands','feet','ring','neck'] %}
-        <option value="{{ s }}">{{ slot_icons.get(s,'') }} {{ s.replace('_',' ')|title }}</option>
-        {% endfor %}
-      </select>
+<div id="equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;min-width:340px;max-width:460px;width:90%;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);" id="equip-modal-title">Choose Item</div>
+      <button onclick="closeEquipModal()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;line-height:1;">✕</button>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn-primary" style="flex:1;" onclick="confirmEquip()">✅ Equip</button>
-      <button style="flex:1;background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:8px;cursor:pointer;" onclick="closeEquipModal()">Cancel</button>
+    <div style="font-size:0.82rem;color:var(--text3);margin-bottom:14px;" id="equip-modal-sub"></div>
+    <div id="equip-modal-items" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;"></div>
+    <div style="margin-top:14px;">
+      <button style="width:100%;background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:8px;cursor:pointer;" onclick="closeEquipModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -317,46 +312,77 @@ function applyEqFilters() {
   document.getElementById('eq-inv-count').textContent = `${count} item${count !== 1 ? 's' : ''}`;
 }
 
-function handleInvClick(id, slot, isEquipped, name) {
+async function handleInvClick(id, slot, isEquipped, name) {
   if (isEquipped) {
     if (!confirm(`Unequip "${name}"?`)) return;
     unequipSlot(slot);
   } else {
-    pendingEquipId   = id;
-    pendingEquipSlot = slot;
-    document.getElementById('equip-modal-title').textContent = `Equip: ${name}`;
-    document.getElementById('equip-modal-sub').textContent   = `Item #${id} | Slot: ${slot}`;
-    // Pre-select the slot
-    const sel = document.getElementById('equip-slot-select');
-    for (let opt of sel.options) { if (opt.value === slot) { sel.value = slot; break; } }
-    document.getElementById('equip-modal').style.display = 'flex';
+    // Equip directly — slot is already known, no need to ask
+    if (!confirm(`Equip "${name}" to ${slot.replace('_',' ')} slot?`)) return;
+    const res = await apiAction('/action/equip', {item_id: id, slot});
+    if (res.status === 'success') {
+      toast('✅ Item equipped!');
+      setTimeout(() => location.reload(), 700);
+    } else {
+      toast('❌ ' + (res.message || res.error || 'Equip failed'), false);
+    }
   }
 }
 
-function openEquipModal(slot) {
-  document.getElementById('equip-modal-title').textContent = 'Choose an item to equip';
-  document.getElementById('equip-modal-sub').textContent   = `Slot: ${slot}`;
-  document.getElementById('equip-slot-select').value = slot;
+function openEquipModal(targetSlot) {
+  // Show inventory items filtered to this slot
+  const title = document.getElementById('equip-modal-title');
+  const sub   = document.getElementById('equip-modal-sub');
+  const list  = document.getElementById('equip-modal-items');
+
+  title.textContent = `Choose item for ${targetSlot.replace('_',' ')} slot`;
+  sub.textContent   = 'Only items matching this slot are shown';
+  list.innerHTML    = '';
+
+  // Find matching cards from the inventory grid
+  const allCards = document.querySelectorAll('#inv-grid .inv-item');
+  const matches  = Array.from(allCards).filter(c => c.dataset.slot === targetSlot && c.dataset.equipped !== 'true');
+
+  if (matches.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-style:italic;">No unequipped items for this slot.</div>';
+  } else {
+    matches.forEach(card => {
+      const id    = card.dataset.itemId;
+      const name  = card.querySelector('[data-label="name"]')?.textContent || card.dataset.name || 'Item #' + id;
+      const power = parseFloat(card.dataset.power || 0).toFixed(2);
+      const btn   = document.createElement('div');
+      btn.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:border-color .15s;';
+      btn.onmouseenter = () => btn.style.borderColor = 'var(--gold)';
+      btn.onmouseleave = () => btn.style.borderColor = 'var(--border)';
+      btn.innerHTML = `
+        <div>
+          <div style="font-size:0.88rem;font-weight:600;color:var(--text);">${name}</div>
+          <div style="font-size:0.72rem;color:var(--teal2);">✨ ${power}%</div>
+        </div>
+        <button class="btn-primary" style="padding:5px 14px;font-size:0.78rem;" onclick="equipItemFromSlot(${id},'${targetSlot}',event)">Equip →</button>
+      `;
+      list.appendChild(btn);
+    });
+  }
   document.getElementById('equip-modal').style.display = 'flex';
+}
+
+async function equipItemFromSlot(id, slot, e) {
+  e.stopPropagation();
+  const res = await apiAction('/action/equip', {item_id: id, slot});
+  if (res.status === 'success') {
+    toast('✅ Item equipped!');
+    closeEquipModal();
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Equip failed'), false);
+  }
 }
 
 function closeEquipModal() {
   document.getElementById('equip-modal').style.display = 'none';
   pendingEquipId   = null;
   pendingEquipSlot = null;
-}
-
-async function confirmEquip() {
-  if (!pendingEquipId) { closeEquipModal(); return; }
-  const slot = document.getElementById('equip-slot-select').value;
-  const res  = await apiAction('/action/equip', {item_id: pendingEquipId, slot});
-  if (res.status === 'success') {
-    toast('✅ Item equipped!');
-    setTimeout(() => location.reload(), 700);
-  } else {
-    toast('❌ ' + (res.message || res.error || 'Equip failed'), false);
-  }
-  closeEquipModal();
 }
 
 async function unequipSlot(slot) {

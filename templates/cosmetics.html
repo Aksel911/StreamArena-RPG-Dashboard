@@ -14,6 +14,7 @@
   <button class="cosm-tab active" data-tab="backs" onclick="switchTab('backs',this)">🎒 Backpacks</button>
   <button class="cosm-tab" data-tab="skins" onclick="switchTab('skins',this)">🎨 Skins Shop</button>
   <button class="cosm-tab" data-tab="consumables" onclick="switchTab('consumables',this)">🧪 Consumables</button>
+  <button class="cosm-tab" data-tab="chests" onclick="switchTab('chests',this)">📦 Chests</button>
 </div>
 
 {# ── Tab: My Backpacks ─────────────────────────────────────────────── #}
@@ -56,9 +57,9 @@
             <div style="font-size:0.7rem;color:var(--text3);">ID: {{ b.get('id','?') }}</div>
           </div>
           <div style="text-align:right;font-size:0.8rem;">
-            {% if b.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">💎 {{ b.get('platinum_cost') }}</div>{% endif %}
-            {% if b.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💠 {{ b.get('gem_cost') }}</div>{% endif %}
-            {% if b.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🥇 {{ "{:,}".format(b.get('gold_cost','0')|int) }}</div>{% endif %}
+            {% if b.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">🪨 {{ b.get('platinum_cost') }}</div>{% endif %}
+            {% if b.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💎 {{ b.get('gem_cost') }}</div>{% endif %}
+            {% if b.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🪙 {{ "{:,}".format(b.get('gold_cost','0')|int) }}</div>{% endif %}
           </div>
         </div>
         {% endfor %}
@@ -84,9 +85,9 @@
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--text3);">{{ s.get('name_string','') }}</div>
         </div>
         <div style="text-align:right;font-size:0.8rem;">
-          {% if s.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">💎 {{ s.get('platinum_cost') }}</div>{% endif %}
-          {% if s.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💠 {{ s.get('gem_cost') }}</div>{% endif %}
-          {% if s.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🥇 {{ "{:,}".format(s.get('gold_cost','0')|int) }}</div>{% endif %}
+          {% if s.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">🪨 {{ s.get('platinum_cost') }}</div>{% endif %}
+          {% if s.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💎 {{ s.get('gem_cost') }}</div>{% endif %}
+          {% if s.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🪙 {{ "{:,}".format(s.get('gold_cost','0')|int) }}</div>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -158,14 +159,12 @@
         <div style="flex:1;display:flex;align-items:center;justify-content:center;">
           <span style="font-size:0.82rem;color:var(--text3);font-style:italic;">— Empty —</span>
         </div>
-        <button class="btn-sm" style="margin-top:8px;width:100%;background:var(--bg4);border:1px dashed var(--border);color:var(--text3);" disabled>+ Equip</button>
+        <button class="btn-sm btn-primary-sm" style="margin-top:8px;width:100%;" onclick="openFromSlotModal({{ slot_num }})">+ Equip</button>
         {% endif %}
       </div>
       {% endfor %}
     </div>
-    <div style="font-size:0.72rem;color:var(--text3);margin-top:10px;">
-      💡 Click <strong style="color:var(--gold2);">Equip →</strong> on any consumable below to assign it to a slot.
-    </div>
+
   </div>
 
   {# ── Consumables inventory ────────────────────────────────────── #}
@@ -229,6 +228,110 @@
   </div>
 </div>
 
+
+{# ── Tab: Chests ─────────────────────────────────────────────── #}
+<div id="tab-chests" style="display:none;">
+
+  {# Currency bar #}
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+    <span style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
+    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨 {{ player_plat }}</span>
+    <span class="currency-gem">💎 {{ player_gems }}</span>
+  </div>
+
+  <div class="grid-2">
+    {# My Chests #}
+    <div class="card">
+      <div class="card-title-chests">📦 My Chests</div>
+      {% set pchests = player_chests.get('chests', []) %}
+      {% if pchests %}
+      <button class="btn-primary" style="width:100%;margin-bottom:14px;" onclick="openAllChests()">🔮 Open ALL Chests</button>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for chest in pchests %}
+        <div style="padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:0.92rem;font-weight:600;color:var(--gold2);">📦 {{ chest.get('display_name','?') }}</div>
+              <div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">ID: {{ chest.get('chest_id','?') }} &bull; {{ chest.get('drop_min','?') }}–{{ chest.get('drop_max','?') }} drops</div>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:800;color:var(--gold2);">×{{ chest.get('amount',0) }}</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-sm btn-primary-sm" style="flex:1;" onclick="openChest({{ chest.get('chest_id',0) }}, '{{ chest.get('display_name','Chest') }}')">🔮 Open 1</button>
+            {% if chest.get('amount',0)|int >= 2 %}
+            <button class="btn-sm btn-primary-sm" style="flex:1;" onclick="openMultiChest({{ chest.get('chest_id',0) }}, '{{ chest.get('display_name','Chest') }}', {{ chest.get('amount',0) }})">🔮 Open All ({{ chest.get('amount',0) }})</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="icon">📦</div><p>No chests owned.</p></div>
+      {% endif %}
+    </div>
+
+    {# Buy Chests #}
+    <div class="card">
+      <div class="card-title">🛍️ Buy Chests</div>
+      {% set gchests = game_chests.get('chests', []) %}
+      {% if gchests %}
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for chest in gchests %}
+        <div style="padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--text);">📦 {{ chest.get('display_name','?') }}</div>
+              <div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">{{ chest.get('drop_min','?') }}–{{ chest.get('drop_max','?') }} drops</div>
+            </div>
+
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            {% if chest.get('gold_cost','0')|int > 0 %}
+            <button class="btn-sm btn-primary-sm" style="flex:1; font-family: var(--font-sans);" onclick="buyChest({{ chest.get('chest_id',0) }}, 'standard', '{{ chest.get('display_name','?') }}', {{ chest.get('gold_cost',0)|int }}, 0, 0)">🛒 🪙 {{ "{:,}".format(chest.get('gold_cost',0)|int) }} (Gold)</button>
+            {% endif %}
+            {% if chest.get('platinum_cost','0')|int > 0 %}
+            <button class="btn-sm btn-outline-blue" onclick="buyChest({{ chest.get('chest_id',0) }}, 'platinum', '{{ chest.get('display_name','?') }}', 0, {{ chest.get('platinum_cost',0)|int }}, 0)">🛒 🪨 {{ chest.get('platinum_cost',0) }} (Platinum)</button>
+            {% endif %}
+            {% if chest.get('gem_cost','0')|int > 0 %}
+            <button class="btn-sm btn-outline-teal" onclick="buyChest({{ chest.get('chest_id',0) }}, 'gems', '{{ chest.get('display_name','?') }}', 0, 0, {{ chest.get('gem_cost',0)|int }})">🛒 💎 {{ chest.get('gem_cost',0) }} (Gems)</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state"><div class="icon">🛍️</div><p>No chests in shop.</p></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Drops result panel #}
+  <div id="chest-drops-panel" style="display:none;margin-top:20px;">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;" id="drops-title">📬 Chest Drops</div>
+        <button onclick="closeDropsPanel()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;">✕ Close</button>
+      </div>
+      <div id="chest-drops-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;"></div>
+    </div>
+  </div>
+</div>
+{# ── Pick consumable for slot modal ──────────────────────────────── #}
+<div id="pick-cons-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1001;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;min-width:320px;max-width:440px;width:90%;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);">⚡ Pick Consumable</div>
+      <button onclick="closePickConsModal()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;line-height:1;">✕</button>
+    </div>
+    <div style="font-size:0.8rem;color:var(--text3);margin-bottom:14px;" id="pick-cons-slot-label">Equip to Slot —</div>
+    <div id="pick-cons-list" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;"></div>
+    <div style="margin-top:14px;">
+      <button onclick="closePickConsModal()" style="width:100%;background:var(--bg4);border:1px solid var(--border);color:var(--text2);border-radius:5px;padding:8px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 {# ── Equip consumable modal ───────────────────────────────────────── #}
 <div id="equip-cons-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;min-width:320px;max-width:400px;width:90%;">
@@ -275,11 +378,11 @@
 function switchTab(tab, btn) {
   document.querySelectorAll('.cosm-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('#tab-backs,#tab-skins,#tab-consumables').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('#tab-backs,#tab-skins,#tab-consumables,#tab-chests').forEach(el => el.style.display = 'none');
   document.getElementById('tab-' + tab).style.display = '';
 }
 const hash = location.hash.replace('#','');
-if (['backs','skins','consumables'].includes(hash)) {
+if (['backs','skins','consumables','chests'].includes(hash)) {
   switchTab(hash, document.querySelector(`[data-tab="${hash}"]`));
 }
 
@@ -347,5 +450,233 @@ async function unequipConsumable(slot) {
 document.getElementById('equip-cons-modal').addEventListener('click', function(e) {
   if (e.target === this) closeEquipConsModal();
 });
+
+// ── Chest helpers ─────────────────────────────────────────────────
+const SLOT_ICONS_JS = {{ slot_icons|tojson }};
+const PLAYER_GOLD_C  = {{ player_gold }};
+const PLAYER_PLAT_C  = {{ player_plat }};
+const PLAYER_GEMS_C  = {{ player_gems }};
+
+function powerColor(pct) {
+  if (pct >= 40) return '#ff8888';
+  if (pct >= 25) return '#ffaa44';
+  if (pct >= 15) return 'var(--gold2)';
+  return 'var(--teal2)';
+}
+
+function renderDrops(drops, title) {
+  const panel = document.getElementById('chest-drops-panel');
+  const list  = document.getElementById('chest-drops-list');
+  document.getElementById('drops-title').textContent = title;
+  list.innerHTML = '';
+
+  drops.forEach(d => {
+    const card = document.createElement('div');
+    card.style.cssText = 'padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);position:relative;';
+
+    if (d.type === 'item') {
+      const pct   = (parseFloat(d.power || 0) * 100).toFixed(2);
+      const color = powerColor(parseFloat(pct));
+      const icon  = SLOT_ICONS_JS[d.slot] || '❓';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:1.3rem;">${icon}</span>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:600;color:var(--text);">
+              ${d.slot ? d.slot.replace('_',' ') : '?'} item
+            </div>
+            <div style="font-size:0.68rem;color:var(--text3);">#${d.created_id}</div>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:3px;">
+            <span style="color:var(--text3);">✨ Power</span>
+            <span style="color:${color};font-weight:700;">${pct}%</span>
+          </div>
+          <div style="height:4px;background:var(--bg4);border-radius:2px;">
+            <div style="height:4px;border-radius:2px;width:${Math.min(parseFloat(pct),100)}%;background:${color};"></div>
+          </div>
+        </div>
+        <button class="btn-sm btn-danger" style="width:100%;font-size:0.72rem;"
+                onclick="deleteDropItem(${d.created_id}, this)">🗑️ Delete Item</button>
+      `;
+    } else if (d.type === 'consumable') {
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.4rem;">🧪</span>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.82rem;font-weight:600;color:var(--teal2);">Consumable</div>
+            <div style="font-size:0.72rem;color:var(--text3);">ID: ${d.consumable_id} &bull; ×${d.amount}</div>
+          </div>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `<div style="font-size:0.82rem;color:var(--text2);">🎁 ${d.type}</div>`;
+    }
+    list.appendChild(card);
+  });
+
+  panel.style.display = 'block';
+  setTimeout(() => panel.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+}
+
+async function deleteDropItem(itemId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  const res = await apiAction('/action/destroy', {item_id: itemId});
+  if (res.status === 'success') {
+    toast('🗑️ Item deleted');
+    btn.closest('div[style*="background:var(--bg3)"]').style.opacity = '0.4';
+    btn.textContent = '✓ Deleted';
+  } else {
+    toast('❌ ' + (res.message || 'Delete failed'), false);
+    btn.disabled = false;
+    btn.textContent = '🗑️ Delete Item';
+  }
+}
+
+function closeDropsPanel() {
+  document.getElementById('chest-drops-panel').style.display = 'none';
+}
+
+async function openChest(chestId, name) {
+  const res = await apiAction('/action/open_chest', {chest_id: chestId});
+  if (res.status === 'success') {
+    const items = (res.chest_drops || []).filter(d => d.type === 'item').length;
+    const cons  = (res.chest_drops || []).filter(d => d.type === 'consumable').length;
+    toast(`✅ ${name} opened! ${items} item${items!==1?'s':''}, ${cons} consumable${cons!==1?'s':''}`);
+    renderDrops(res.chest_drops || [], `📬 ${name} — Drops`);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Open failed'), false);
+  }
+}
+
+async function openMultiChest(chestId, name, amount) {
+  if (!confirm(`Open all ${amount}x "${name}"? This cannot be undone!`)) return;
+  const res = await apiAction('/action/open_multi_chest', {chest_id: chestId});
+  if (res.status === 'success') {
+    const drops = res.chest_drops || [];
+    const items = drops.filter(d => d.type === 'item').length;
+    const cons  = drops.filter(d => d.type === 'consumable').length;
+    toast(`✅ Opened ${amount}x ${name}! ${items} items, ${cons} consumables`);
+    renderDrops(drops, `📬 ${amount}x ${name} — All Drops`);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Open failed'), false);
+  }
+}
+
+async function openAllChests() {
+  const chestBtns = document.querySelectorAll('[onclick*="openMultiChest"], [onclick*="openChest"]');
+  if (!confirm('Open ALL your chests? This cannot be undone!')) return;
+  // Collect all chest ids from owned chests
+  const allChestIds = new Set();
+  chestBtns.forEach(btn => {
+    const match = btn.getAttribute('onclick').match(/openM?u?l?t?i?C?h?e?s?t\((\d+)/);
+    if (match) allChestIds.add(parseInt(match[1]));
+  });
+
+  let allDrops = [];
+  for (const cid of allChestIds) {
+    try {
+      const res = await apiAction('/action/open_multi_chest', {chest_id: cid});
+      if (res.status === 'success') allDrops = allDrops.concat(res.chest_drops || []);
+    } catch {}
+  }
+  if (allDrops.length > 0) {
+    toast(`✅ All chests opened! ${allDrops.filter(d=>d.type==='item').length} items total`);
+    renderDrops(allDrops, `📬 All Chests — Total Drops (${allDrops.length})`);
+  } else {
+    toast('No drops or no chests to open', false);
+  }
+}
+
+async function buyChest(chestId, currency, name, gold, plat, gems) {
+  const cost = currency === 'standard' ? `🪙 ${gold.toLocaleString()} Gold`
+             : currency === 'gems'     ? `💎 ${gems} Gems`
+             :                           `🪨 ${plat} Platinum`;
+  if (!confirm(`Buy "${name}" for ${cost}?`)) return;
+  const res = await apiAction('/action/buy_chest', {chest_id: chestId, currency});
+  if (res.status === 'success') {
+    const drops = res.chest_drops || [];
+    const items = drops.filter(d => d.type === 'item').length;
+    const cons  = drops.filter(d => d.type === 'consumable').length;
+    toast(`✅ Bought & opened "${name}"! ${items} item${items!==1?'s':''}, ${cons} consumable${cons!==1?'s':''}`);
+    renderDrops(drops, `📬 Bought ${name} — Drops`);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Purchase failed'), false);
+  }
+}
+
+// ── Pick consumable for slot ──────────────────────────────────────
+let pickConsTargetSlot = null;
+
+const ALL_CONSUMABLES = [
+  {% for c in consumables.get('consumables', []) %}
+  {
+    id: {{ c.get('consumable_id', c.get('id', 0)) }},
+    name: {{ c.get('name','?')|tojson }},
+    effect_key: {{ c.get('effect_key','')|tojson }},
+    effect_value: {{ c.get('effect_value', '')|tojson }},
+    amount: {{ c.get('amount', 0) }},
+    icon: {{ ('🧪' if 'potion' in c.get('name','').lower() else '☀️' if 'resurrect' in c.get('effect_key','') else '👾' if 'summon' in c.get('effect_key','') else '✨')|tojson }}
+  },
+  {% endfor %}
+];
+
+function openFromSlotModal(slotNum) {
+  pickConsTargetSlot = slotNum;
+  document.getElementById('pick-cons-slot-label').textContent = `Equip to Slot ${slotNum}`;
+  const list = document.getElementById('pick-cons-list');
+  list.innerHTML = '';
+  if (ALL_CONSUMABLES.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3);font-style:italic;">No consumables in inventory.</div>';
+  } else {
+    ALL_CONSUMABLES.forEach(c => {
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;';
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.2rem;">${c.icon}</span>
+          <div>
+            <div style="font-size:0.88rem;font-weight:600;color:var(--text);">${c.name}</div>
+            <div style="font-size:0.7rem;color:var(--teal2);">${c.effect_key}${c.effect_value ? ': ' + c.effect_value + '%' : ''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold2);">×${c.amount}</span>
+          <button class="btn-sm btn-primary-sm" onclick="equipToPickedSlot(${c.id}, ${JSON.stringify(c.name)}, event)">Equip →</button>
+        </div>
+      `;
+      div.onmouseenter = () => div.style.borderColor = 'var(--gold)';
+      div.onmouseleave = () => div.style.borderColor = 'var(--border)';
+      list.appendChild(div);
+    });
+  }
+  document.getElementById('pick-cons-modal').style.display = 'flex';
+}
+
+function closePickConsModal() {
+  document.getElementById('pick-cons-modal').style.display = 'none';
+  pickConsTargetSlot = null;
+}
+
+async function equipToPickedSlot(consId, name, e) {
+  e.stopPropagation();
+  const slot = pickConsTargetSlot;
+  if (!slot) return;
+  const res = await apiAction('/action/equip_consumable', {consumable_id: consId, slot});
+  if (res.status === 'success') {
+    toast(`✅ ${name} equipped to slot ${slot}!`);
+    closePickConsModal();
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+  }
+}
+
+document.getElementById('pick-cons-modal').addEventListener('click', function(e) {
+  if (e.target === this) closePickConsModal();
+});
+
 </script>
 {% endblock %}
