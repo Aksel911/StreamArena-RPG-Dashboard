@@ -151,10 +151,10 @@
     .sidebar-nav { flex: 1; padding: 12px 0; }
     .nav-section {
       padding: 6px 20px 2px;
-      font-size: 0.62rem;
+      font-size: 0.88rem;
       letter-spacing: 0.15em;
       text-transform: uppercase;
-      color: var(--text3);
+      color: var(--text2);
       font-family: 'Cinzel', serif;
     }
     .nav-link {
@@ -174,6 +174,8 @@
       background: rgba(201,168,76,0.08);
     }
     .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .nav-page { font-size: 1rem; }
 
     .sidebar-footer {
       padding: 14px 20px;
@@ -288,6 +290,7 @@
       border-radius: 6px;
       padding: 14px 16px;
       text-align: center;
+      transition: all 0.2s;
     }
     .stat-box .val {
       font-family: 'Cinzel', serif;
@@ -295,7 +298,9 @@
       font-weight: 600;
       color: var(--gold2);
     }
-    .stat-box .lbl { font-size: 0.72rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+    .stat-box .lbl { font-size: 0.88rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+    .stat-box:hover{ border-color: var(--border2); }
+
 
     /* ─ Currency ─ */
     .currency { display: inline-flex; align-items: center; gap: 4px; }
@@ -356,11 +361,11 @@
     }
     .item-classes { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
     .class-tag {
-      font-size: 0.62rem;
+      font-size: 0.7rem;
       padding: 1px 5px;
       background: var(--bg4);
       border-radius: 3px;
-      color: var(--text3);
+      color: var(--text1);
       border: 1px solid var(--border);
     }
     .lock-icon {
@@ -419,7 +424,16 @@
       font-size: 0.7rem;
       font-family: 'Cinzel', serif;
       letter-spacing: 0.05em;
+      transition: all 0.2s;
     }
+
+    .badge:hover {
+        background: var(--bg3);
+        border-color: var(--text2);
+        cursor: pointer;
+    }
+
+
     .badge-gold { background: rgba(201,168,76,0.15); color: var(--gold2); border: 1px solid rgba(201,168,76,0.3); }
     .badge-red { background: rgba(161,32,32,0.2); color: #cc6666; border: 1px solid rgba(161,32,32,0.3); }
     .badge-green { background: rgba(42,122,106,0.2); color: var(--teal2); border: 1px solid rgba(42,122,106,0.3); }
@@ -709,6 +723,22 @@
       border-color: rgba(100, 180, 255, 0.7);
       color: color-mix(in srgb, var(--blue2) 90%, white);
     }
+    
+    .btn-outline-gray {
+        flex: 1;
+        background: var(--bg4);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        color: var(--text1);
+        cursor: pointer;
+        font-size: inherit;
+        transition: all 0.2s;
+    }
+
+    .btn-outline-gray:hover {
+        background: var(--bg3);
+        border-color: var(--text2);
+    }
 
 
 
@@ -721,7 +751,19 @@
     #delete-selected:disabled { opacity:0.4;cursor:not-allowed; }
 
 
-    
+    .auto-card {
+      flex: 1;
+      min-width: 260px;
+      padding: 12px 16px;
+      background: var(--bg2);
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 8px;
+      transition: all 0.3s ease; /* плавность при наведении */
+    }
+
+    .auto-card:hover {
+      border-color: var(--border2);
+    }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
@@ -752,47 +794,47 @@
     <nav class="sidebar-nav">
       <div class="nav-section">Overview</div>
       <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
-        <span class="nav-icon">🏰</span><span>Dashboard</span>
+        <span class="nav-icon">🏰</span><span class="nav-page">Dashboard</span>
       </a>
       <a href="{{ url_for('mail') }}" class="nav-link {% if request.endpoint == 'mail' %}active{% endif %}">
-        <span class="nav-icon">📜</span><span>Mail</span>
+        <span class="nav-icon">📜</span><span class="nav-page">Mail</span>
       </a>
 
       <div class="nav-section">Character</div>
       <a href="{{ url_for('equipment') }}" class="nav-link {% if request.endpoint == 'equipment' %}active{% endif %}">
-        <span class="nav-icon">🛡️</span><span>Equipment</span>
+        <span class="nav-icon">🛡️</span><span class="nav-page">Equipment</span>
       </a>
       <a href="{{ url_for('inventory') }}" class="nav-link {% if request.endpoint == 'inventory' %}active{% endif %}">
-        <span class="nav-icon">🎒</span><span>Inventory</span>
+        <span class="nav-icon">🎒</span><span class="nav-page">Inventory</span>
       </a>
       <a href="{{ url_for('cosmetics') }}" class="nav-link {% if request.endpoint == 'cosmetics' %}active{% endif %}">
-        <span class="nav-icon">✨</span><span>Cosmetics</span>
+        <span class="nav-icon">✨</span><span class="nav-page">Cosmetics</span>
       </a>
 
       <div class="nav-section">World</div>
       <a href="{{ url_for('bosses') }}" class="nav-link {% if request.endpoint == 'bosses' %}active{% endif %}">
-        <span class="nav-icon">💀</span><span>Bosses & Dungeons</span>
+        <span class="nav-icon">💀</span><span class="nav-page">Bosses & Dungeons</span>
       </a>
       <a href="{{ url_for('leaderboard') }}" class="nav-link {% if request.endpoint == 'leaderboard' %}active{% endif %}">
-        <span class="nav-icon">🏆</span><span>Leaderboard</span>
+        <span class="nav-icon">🏆</span><span class="nav-page">Leaderboard</span>
       </a>
       <a href="{{ url_for('chat') }}" class="nav-link {% if request.endpoint == 'chat' %}active{% endif %}">
-        <span class="nav-icon">💬</span><span>Global Chat</span>
+        <span class="nav-icon">💬</span><span class="nav-page">Global Chat</span>
       </a>
 
       <div class="nav-section">Economy</div>
       <a href="{{ url_for('market') }}" class="nav-link {% if request.endpoint == 'market' %}active{% endif %}">
-        <span class="nav-icon">⚖️</span><span>Marketplace</span>
+        <span class="nav-icon">⚖️</span><span class="nav-page">Marketplace</span>
       </a>
 
       <div class="nav-section">Social</div>
       <a href="{{ url_for('guild') }}" class="nav-link {% if request.endpoint == 'guild' %}active{% endif %}">
-        <span class="nav-icon">🏰</span><span>Guild</span>
+        <span class="nav-icon">🏰</span><span class="nav-page">Guild</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <a href="https://streamarenarpg.com" target="_blank">↗ Open Game</a>
+      <a style="font-size: 0.75rem;" href="https://streamarenarpg.com" target="_blank">↗ Open Game</a>
     </div>
   </aside>
   {% endif %}
@@ -837,6 +879,200 @@ async function toggleLock(id, lock) {
 }
 </script>
 
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  GLOBAL AUTO-RUNNER  — works on ALL pages, every 30 seconds
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  const AUTO_INTERVAL = 30000; // 30 seconds
+
+  // ── Settings helpers ──────────────────────────────────────────
+  const ls = key => localStorage.getItem(key);
+  const lsJ = (key, def) => { try { return JSON.parse(ls(key)) ?? def; } catch { return def; } };
+
+  // ── Main runner ───────────────────────────────────────────────
+  let running = false;
+
+  async function runAll() {
+    if (running) return;
+
+    // Check if any auto feature is enabled at all
+    const anyEnabled = [
+      ls('autoSpin'),
+      ls('autoEquipBest'),
+      ls('autoDeleteEnabled'),
+      ls('autoListEnabled'),
+      ls('autoEquipCons'),
+      ls('autoOpenChests'),
+    ].some(v => v === '1');
+
+    if (!anyEnabled) return;
+
+    running = true;
+    try {
+      const res  = await fetch('/api/auto_data');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.error) return;
+
+      await Promise.all([
+        maybeAutoSpin(data),
+        maybeAutoEquipBest(data),
+        maybeAutoDelete(data),
+        maybeAutoList(data),
+        maybeAutoEquipCons(data),
+        maybeAutoOpenChests(data),
+      ]);
+    } catch(e) { /* network error, ignore */ }
+    finally { running = false; }
+  }
+
+  // ── Auto-Spin ─────────────────────────────────────────────────
+  let _spunThisBoot = false;
+  async function maybeAutoSpin(data) {
+    if (ls('autoSpin') !== '1') return;
+    const ts   = parseInt(data.spin?.next_spin_unix ?? 0, 10) * 1000;
+    const ready = Date.now() >= ts;
+    if (!ready || _spunThisBoot) return;
+    _spunThisBoot = true;
+    const res = await apiAction('/action/daily_spin', {});
+    if (res.status === 'success') {
+      toast('🎡 Auto-Spin! Got: ' + (res.reward || 'reward'));
+    }
+  }
+
+  // ── Auto-Equip Best ───────────────────────────────────────────
+  async function maybeAutoEquipBest(data) {
+    if (ls('autoEquipBest') !== '1') return;
+    const playerClass  = (data.player_class || '').toLowerCase();
+    const skipSlots    = JSON.parse(ls('aequip_skip_slots') || '[]');
+    const items        = data.items || [];
+
+    // Build equipped power by slot
+    const equippedPower = {};
+    items.filter(i => i.is_equipped).forEach(i => {
+      const cur = equippedPower[i.slot];
+      if (cur === undefined || i.power > cur) equippedPower[i.slot] = i.power;
+    });
+
+    // Find best unequipped item per slot (class-aware, with skip list)
+    const bestBySlot = {};
+    items.filter(i => !i.is_equipped && !i.is_locked && !i.is_listed).forEach(i => {
+      if (skipSlots.includes(i.slot)) return;
+      const classes = (i.classes || ['any']).map(c => String(c).toLowerCase());
+      const classOk = classes.includes('any') || !playerClass || classes.includes(playerClass);
+      if (!classOk) return;
+      const cur = bestBySlot[i.slot];
+      if (!cur || i.power > cur.power) bestBySlot[i.slot] = i;
+    });
+
+    // Equip upgrades
+    let upgraded = 0;
+    for (const [slot, best] of Object.entries(bestBySlot)) {
+      const currentPower = equippedPower[slot] ?? -1;
+      if (best.power <= currentPower) continue;
+      const res = await apiAction('/action/equip', { item_id: best.id, slot });
+      if (res.status === 'success') {
+        upgraded++;
+        toast('⚡ Auto-equipped: ' + best.item_name + ' (' + best.slot + ')');
+      }
+    }
+  }
+
+  // ── Auto-Delete ───────────────────────────────────────────────
+  async function maybeAutoDelete(data) {
+    if (ls('autoDeleteEnabled') !== '1') return;
+    const powerThresh = parseFloat(ls('adel_power') ?? '10');
+    const powerMode   = ls('adel_mode') ?? 'below';   // 'below' | 'above'
+    const slots       = lsJ('adel_slots', ['weapon','off_hand','head','body','hands','feet','ring','neck']);
+
+    const toDelete = (data.items || []).filter(i => {
+      if (i.is_equipped || i.is_locked || i.is_listed) return false;
+      if (!slots.includes(i.slot)) return false;
+      return powerMode === 'below' ? i.power < powerThresh : i.power > powerThresh;
+    });
+
+    if (!toDelete.length) return;
+    const ids = toDelete.map(i => i.id);
+    const res = await apiAction('/action/destroy_items', { item_ids: ids });
+    if (res.status === 'success' || res.status === 'partial') {
+      toast('🗑️ Auto-deleted ' + (res.deleted_count || ids.length) + ' item(s)');
+    }
+  }
+
+  // ── Auto-List ─────────────────────────────────────────────────
+  async function maybeAutoList(data) {
+    if (ls('autoListEnabled') !== '1') return;
+    const powerThresh = parseFloat(ls('alist_power') ?? '15');
+    const powerMode   = ls('alist_mode') ?? 'below';  // 'below' | 'above'
+    const slots       = lsJ('alist_slots', ['weapon','off_hand','head','body','hands','feet','ring','neck']);
+    const gold  = parseInt(ls('alist_gold') ?? '0');
+    const plat  = parseInt(ls('alist_plat') ?? '0');
+    const gems  = parseInt(ls('alist_gems') ?? '0');
+    if (gold === 0 && plat === 0 && gems === 0) return;
+
+    const toList = (data.items || []).filter(i => {
+      if (i.is_equipped || i.is_locked || i.is_listed) return false;
+      if (!slots.includes(i.slot)) return false;
+      return powerMode === 'below' ? i.power < powerThresh : i.power > powerThresh;
+    });
+
+    let listed = 0;
+    for (const item of toList) {
+      const res = await apiAction('/action/list_item', {
+        item_id: item.id, gold_cost: gold, platinum_cost: plat, gem_cost: gems
+      });
+      if (res.status === 'success') listed++;
+    }
+    if (listed > 0) toast('⚖️ Auto-listed ' + listed + ' item(s)');
+  }
+
+  // ── Auto-Equip Consumables ────────────────────────────────────
+  async function maybeAutoEquipCons(data) {
+    if (ls('autoEquipCons') !== '1') return;
+    const equipped = data.consumables?.equipped_consumables ?? [];
+    const available = data.consumables?.consumables ?? [];
+    if (!available.length) return;
+
+    const filledSlots = new Set(equipped.map(e => parseInt(e.slot)));
+    const equippedCids = new Set(equipped.map(e => String(e.consumable_id)));
+
+    const unequipped = available.filter(c => !equippedCids.has(String(c.consumable_id)));
+    if (!unequipped.length) return; // all consumables already in slots
+
+    let idx = 0;
+    for (let slot = 1; slot <= 3; slot++) {
+      if (filledSlots.has(slot)) continue;
+      if (idx >= unequipped.length) break;
+      const cons = unequipped[idx++];
+      const res  = await apiAction('/action/equip_consumable', {
+        consumable_id: cons.consumable_id, slot
+      });
+      if (res.status === 'success') {
+        toast('⚡ Auto-equipped ' + cons.name + ' → Slot ' + slot);
+      }
+    }
+  }
+
+  // ── Auto-Open Chests ──────────────────────────────────────────
+  async function maybeAutoOpenChests(data) {
+    if (ls('autoOpenChests') !== '1') return;
+    const chests = data.chests?.chests ?? [];
+    let opened = 0;
+    for (const chest of chests) {
+      if ((chest.amount || 0) <= 0) continue;
+      const res = await apiAction('/action/open_multi_chest', { chest_id: chest.chest_id });
+      if (res.status === 'success') opened++;
+    }
+    if (opened > 0) toast('📦 Auto-opened chests!');
+  }
+
+  // Start global runner
+  setTimeout(runAll, 3000);   // first check 3s after page load
+  setInterval(runAll, AUTO_INTERVAL);
+})();
+</script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -58,11 +58,17 @@
   {# ── All Listings ────────────────────────────────── #}
   <div>
     <div class="card">
-      <div class="card-title">📋 Market Listings
-        {% if listings.get('next_page') %}
-        <a href="{{ url_for('market', slot=slot_filter, class_flag=class_filter, page=page+1, sort=request.args.get('sort','default')) }}"
-           style="font-size:0.72rem;color:var(--gold);text-decoration:none;font-family:'Crimson Text',serif;font-weight:400;margin-left:auto;">Next →</a>
-        {% endif %}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="card-title" style="margin-bottom:0;">📋 Market Listings
+          {% if listings.get('next_page') %}
+          <a href="{{ url_for('market', slot=slot_filter, class_flag=class_filter, page=page+1, sort=request.args.get('sort','default')) }}"
+             style="font-size:0.72rem;color:var(--gold);text-decoration:none;font-family:'Crimson Text',serif;font-weight:400;margin-left:8px;">Next →</a>
+          {% endif %}
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.78rem;color:var(--text3);white-space:nowrap;">
+          <input type="checkbox" id="hide-own-listings" checked style="accent-color:var(--gold);width:14px;height:14px;">
+          <span class="btn-sm btn-outline-gray" style="color:var(--text)">Hide mine</span>
+        </label>
       </div>
       {% set all_listings = listings.get('listings', []) %}
       {% if all_listings %}
@@ -76,15 +82,16 @@
         <div class="listing-row"
              data-power="{{ item.get('power',0)|float }}"
              data-gold="{{ gold }}" data-plat="{{ plat }}"
-             style="padding:10px 0;border-bottom:1px solid rgba(201,168,76,0.06);display:flex;gap:12px;align-items:flex-start;">
+             data-seller="{{ item.get('username','') }}"
+             style="padding:10px 0;display:flex;gap:12px;align-items:flex-start;border-bottom:1px solid rgba(40, 163, 136, 0.06);border-radius: 15px;">
           <div style="font-size:1.4rem;padding-top:2px;flex-shrink:0;">{{ slot_icons.get(item.get('slot',''),'❓') }}</div>
           <div style="flex:1;min-width:0;">
             <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px;">
               <span style="font-size:0.9rem;font-weight:600;color:var(--text);">{{ item.get('item_name','?') }}</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text3);">@{{ item.get('username','?') }}</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:0.70rem;color:var(--text1);">@{{ item.get('username','?') }}</span>
             </div>
             <div style="margin:4px 0;">
-              <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text2);">
+              <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:var(--text2);">
                 {% if item.get('slot') == 'weapon' %}<span>✨ Damage</span>
                 {% elif item.get('slot') == 'off_hand' %}<span>✨ Armor</span>
                 {% elif item.get('slot') == 'head' %}<span>✨ HP</span>
@@ -107,11 +114,11 @@
             {% if ep.get('extra') %}<span class="item-extra" style="font-size:0.68rem;">✦ {{ ep.get('extra') }}</span>{% endif %}
             {% if ep.get('range') %}<span class="item-extra" style="color:var(--blue2);font-size:0.68rem;">🎯 {{ ep.get('range') }}</span>{% endif %}
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">
-              {% if plat > 0 %}<span class="currency-plat" style="font-size:0.82rem;">🪨 {{ plat }}</span>{% endif %}
-              {% if gold > 0 %}<span class="currency-gold" style="font-size:0.82rem;">🪙 {{ "{:,}".format(gold) }}</span>{% endif %}
-              {% if gem  > 0 %}<span class="currency-gem"  style="font-size:0.82rem;">💎 {{ gem }}</span>{% endif %}
-              {% if plat == 0 and gold == 0 and gem == 0 %}<span style="font-size:0.75rem;color:var(--text3);">Free?</span>{% endif %}
-              <span style="font-size:0.65rem;color:var(--text3);">exp: {{ item.get('time_expires','')[:10] }}</span>
+              {% if plat > 0 %}<span class="currency-plat" style="font-size:0.82rem;">🪨 {{ plat }} (Platinum)</span>{% endif %}
+              {% if gold > 0 %}<span class="currency-gold" style="font-size:0.82rem;">🪙 {{ "{:,}".format(gold) }} (Gold)</span>{% endif %}
+              {% if gem  > 0 %}<span class="currency-gem"  style="font-size:0.82rem;">💎 {{ gem }} (Gems)</span>{% endif %}
+              {% if plat == 0 and gold == 0 and gem == 0 %}<span style="font-size:0.75rem;color:var(--text2);">Free?</span>{% endif %}
+              <span style="font-size:0.65rem;color:var(--text2);">exp: {{ item.get('time_expires','')[:10] }}</span>
             </div>
             {# Purchase button #}
             <div style="margin-top:8px;">
@@ -130,44 +137,55 @@
   <div>
     {# My Listings #}
     <div class="card">
-      <div class="card-title">📤 My Listings ({{ my_listings.get('listings',[])|length }})</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div class="card-title" style="margin-bottom:0;">📤 My Listings ({{ my_listings.get('listings',[])|length }})</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:0.75rem;color:var(--text3);">
+            <input type="checkbox" id="my-select-all" style="accent-color:var(--red2);width:14px;height:14px;">
+            <span class="btn-sm btn-outline-teal" style="color:var(--text)">Select All</span>
+          </label>
+          <button id="cancel-selected-btn" class="btn-sm btn-danger" disabled onclick="cancelSelected()" style="font-size:0.75rem;">✕ Cancel Selected</button>
+          <button class="btn-sm btn-danger" onclick="cancelAllListings()" style="font-size:0.75rem;">🗑️ Cancel ALL</button>
+        </div>
+      </div>
       {% set my = my_listings.get('listings', []) %}
       {% if my %}
-      <div style="max-height:320px;overflow-y:auto;">
+      <div style="max-height:320px;overflow-y:auto;" id="my-listings-container">
         {% for item in my|sort(attribute='power',reverse=true) %}
         {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
         {% set ep = item.get('extra_parsed', {}) %}
-        <div style="padding:10px 0;border-bottom:1px solid rgba(201,168,76,0.06);display:flex;gap:10px;align-items:flex-start;">
+        <div class="my-listing-row" data-listing-id="{{ item.get('id',0) }}"
+             style="padding:10px 0;border-bottom:1px solid rgba(201,168,76,0.06);display:flex;gap:10px;align-items:center;">
+          <label style="cursor:pointer;flex-shrink:0;display:flex;align-items:center;">
+            <input type="checkbox" class="my-listing-cb" value="{{ item.get('id',0) }}" style="accent-color:var(--red2);width:15px;height:15px;">
+          </label>
           <div style="font-size:1.2rem;flex-shrink:0;">{{ slot_icons.get(item.get('slot',''),'❓') }}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:0.88rem;font-weight:600;">{{ item.get('item_name','?') }}</div>
+          <div style="flex:1;min-width:0;display:block ruby;">
+            <div style="font-size:0.88rem;font-weight:600;">{{ item.get('item_name','?') }}:</div>
             <div style="font-size:0.75rem;margin:3px 0;">
-              {% set bonus_text %}
-                  {% if item.get('slot') == 'weapon' %}Damage:
-                  {% elif item.get('slot') == 'off_hand' %}Armor:
-                  {% elif item.get('slot') == 'head' %}HP:
-                  {% elif item.get('slot') == 'body' %}HP:
-                  {% elif item.get('slot') == 'hands' %}A. Speed:
-                  {% elif item.get('slot') == 'feet' %}M. Speed:
-                  {% elif item.get('slot') == 'ring' %}Ring Bonus:
-                  {% elif item.get('slot') == 'neck' %}Neck Bonus:
-                  {% else %}Bonus:
-                  {% endif %}
-              {% endset %}
               <span style="color:{% if power_pct >= 40 %}#ff8888{% elif power_pct >= 25 %}#ffaa44{% else %}var(--teal2){% endif %}">
-                  ✨ {{ bonus_text }} {{ "%.2f"|format(power_pct) }}%
+                  {% if item.get('slot') == 'weapon' %}✨ Damage: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'off_hand' %}✨ Armor: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'head' %}✨ HP: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'body' %}✨ HP: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'hands' %}✨ A. Speed: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'feet' %}✨ M. Speed: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'ring' %}✨ Ring Bonus: {{ "%.2f"|format(power_pct) }}%
+                  {% elif item.get('slot') == 'neck' %}✨ Neck Bonus: {{ "%.2f"|format(power_pct) }}%
+                  {% else %}✨ Power: {{ "%.2f"|format(power_pct) }}%
+                  {% endif %}
               </span>
             </div>
             {% if ep.get('extra') %}<span class="item-extra" style="font-size:0.68rem;">✦ {{ ep.get('extra') }}</span>{% endif %}
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;">
-              {% if item.get('platinum_cost','0')|int > 0 %}<span class="badge badge-blue" style="font-size:0.68rem;">🪨 {{ item.get('platinum_cost') }}</span>{% endif %}
-              {% if item.get('gold_cost','0')|int > 0    %}<span class="badge badge-gold" style="font-size:0.68rem;">🪙 {{ "{:,}".format(item.get('gold_cost','0')|int) }}</span>{% endif %}
-              {% if item.get('gem_cost','0')|int > 0     %}<span class="badge badge-blue" style="font-size:0.68rem;">💎 {{ item.get('gem_cost') }}</span>{% endif %}
+              {% if item.get('platinum_cost','0')|int > 0 %}<span class="badge badge-blue" style="font-size:0.68rem;">🪨 {{ item.get('platinum_cost') }} (Platinum)</span>{% endif %}
+              {% if item.get('gold_cost','0')|int > 0    %}<span class="badge badge-gold" style="font-size:0.68rem;">🪙 {{ "{:,}".format(item.get('gold_cost','0')|int) }} (Gold)</span>{% endif %}
+              {% if item.get('gem_cost','0')|int > 0     %}<span class="badge badge-blue" style="font-size:0.68rem;">💎 {{ item.get('gem_cost') }} (Gems)</span>{% endif %}
             </div>
-            <div style="font-size:0.68rem;color:var(--text3);margin-top:2px;">⏳ {{ item.get('time_expires','')[:10] }}</div>
+            <div style="font-size:0.68rem;color:var(--text2);margin-top:2px;">⏳ {{ item.get('time_expires','')[:10] }}</div>
           </div>
-          <button class="btn-sm btn-danger" style="flex-shrink:0;align-self:center;"
-                  onclick="cancelListing({{ item.get('id',0) }}, '{{ item.get('item_name','Item') }}')">✕ Cancel</button>
+          <button class="btn-sm btn-danger" style="flex-shrink:0;"
+                  onclick="cancelListing({{ item.get('id',0) }}, '{{ item.get('item_name','Item') }}')">✕</button>
         </div>
         {% endfor %}
       </div>
@@ -265,10 +283,76 @@
 </div>
 
 <script>
-const PLAYER_GOLD = {{ player_gold }};
-const PLAYER_PLAT = {{ player_plat }};
-const PLAYER_GEMS = {{ player_gems }};
+const PLAYER_GOLD  = {{ player_gold }};
+const PLAYER_PLAT  = {{ player_plat }};
+const PLAYER_GEMS  = {{ player_gems }};
+const MY_USERNAME  = {{ my_username|tojson }};
 let buyItemId = null;
+
+// ── Hide own listings ─────────────────────────────────────────────
+const hideOwnCb = document.getElementById('hide-own-listings');
+function applyHideOwn() {
+  const hide = hideOwnCb.checked;
+  document.querySelectorAll('.listing-row').forEach(row => {
+    const isMine = row.dataset.seller === MY_USERNAME;
+    row.style.display = (hide && isMine) ? 'none' : '';
+  });
+}
+hideOwnCb.addEventListener('change', applyHideOwn);
+// Apply on load
+document.addEventListener('DOMContentLoaded', applyHideOwn);
+applyHideOwn();
+
+// ── My Listings — select checkboxes ──────────────────────────────
+const selectAllCb = document.getElementById('my-select-all');
+const cancelSelBtn = document.getElementById('cancel-selected-btn');
+
+function updateCancelBtn() {
+  if (!cancelSelBtn) return;
+  const checked = document.querySelectorAll('.my-listing-cb:checked').length;
+  cancelSelBtn.disabled = checked === 0;
+  cancelSelBtn.textContent = checked > 0 ? `✕ Cancel (${checked})` : '✕ Cancel Selected';
+}
+document.querySelectorAll('.my-listing-cb').forEach(cb =>
+  cb.addEventListener('change', updateCancelBtn)
+);
+if (selectAllCb) {
+  selectAllCb.addEventListener('change', function() {
+    document.querySelectorAll('.my-listing-cb').forEach(cb => cb.checked = this.checked);
+    updateCancelBtn();
+  });
+}
+
+async function cancelSelected() {
+  const ids = Array.from(document.querySelectorAll('.my-listing-cb:checked')).map(cb => parseInt(cb.value));
+  if (!ids.length) return;
+  if (!confirm(`Cancel ${ids.length} listing(s)?`)) return;
+  cancelSelBtn.disabled = true;
+  cancelSelBtn.textContent = '⏳ Cancelling...';
+  let ok = 0;
+  for (const id of ids) {
+    const res = await apiAction('/action/cancel_listing', { item_id: id });
+    if (res.status === 'success') ok++;
+  }
+  toast(`✅ Cancelled ${ok} listing(s)`);
+  setTimeout(() => location.reload(), 700);
+}
+
+async function cancelAllListings() {
+  const total = document.querySelectorAll('.my-listing-cb').length;
+  if (!total) { toast('⚠️ No active listings', false); return; }
+  if (!confirm(`Cancel ALL ${total} listings? This cannot be undone.`)) return;
+  const btn = event.currentTarget;
+  btn.disabled = true; btn.textContent = '⏳ Cancelling...';
+  const res = await apiAction('/action/cancel_all_listings', {});
+  if (res.cancelled > 0 || res.status === 'success') {
+    toast(`✅ Cancelled ${res.cancelled} listing(s)${res.failed ? ', ' + res.failed + ' failed' : ''}`);
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ Failed to cancel listings', false);
+    btn.disabled = false; btn.textContent = '🗑️ Cancel ALL';
+  }
+}
 
 function buyItem(id, gold, plat, gems, name) {
   buyItemId = id;
@@ -318,7 +402,10 @@ async function cancelListing(itemId, name) {
   const res = await apiAction('/action/cancel_listing', {item_id: itemId});
   if (res.status === 'success') {
     toast('✅ Listing cancelled!');
-    setTimeout(() => location.reload(), 700);
+    // Remove from DOM instantly
+    const row = document.querySelector(`.my-listing-row[data-listing-id="${itemId}"]`);
+    if (row) row.remove();
+    updateCancelBtn();
   } else {
     toast('❌ ' + (res.message || res.error || 'Failed'), false);
   }

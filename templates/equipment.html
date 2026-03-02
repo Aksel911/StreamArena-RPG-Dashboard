@@ -4,6 +4,7 @@
 
 {% set char  = character %}
 {% set level = char.get('level', 0)|int %}
+<span id="player-class" data-class="{{ char.get('class','') }}" style="display:none;"></span>
 {% set exp   = char.get('experience', 0)|int %}
 {% set next_exp = level * 10000 if level > 0 else 1000 %}
 {% set exp_pct  = [(exp / next_exp * 100), 100]|min|round(1) if next_exp > 0 else 0 %}
@@ -13,6 +14,51 @@
   <div>
     <div class="page-title">🛡️ Equipment</div>
     <div class="page-subtitle">{{ class_icons.get(char.get('class',''),'⚔️') }} {{ char.get('class','?')|title }} — Level {{ level }}</div>
+  </div>
+</div>
+
+{# ── Auto-Equip control ─────────────────────────────────────────── #}
+<div class="auto-card" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding:12px 16px;border-radius:8px;flex-wrap:wrap;">
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+    <input type="checkbox" id="auto-equip-best" style="accent-color:var(--gold);width:16px;height:16px;">
+    <div>
+      <div style="font-size:0.9rem;font-weight:600;color:var(--text);">⚡ Auto-Equip Best Items</div>
+      <div style="font-size:0.88rem;color:var(--text2);">Checks every 30s — equips higher-power items matching your class</div>
+    </div>
+  </label>
+  <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+    <div id="auto-equip-status" style="font-size:0.9rem;color:var(--text2);"></div>
+    <button class="btn-sm btn-outline-gray" onclick="openAutoEquipSettings()">⚙️ Settings</button>
+  </div>
+</div>
+
+{# ── Auto-Equip Settings Modal ─────────────────────────────────── #}
+<div id="auto-equip-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:24px;min-width:340px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);">⚙️ Auto-Equip Settings</div>
+      <button onclick="closeAutoEquipSettings()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:0.9rem;color:var(--text1);display:block;margin-bottom:6px;">Skip these slots (never auto-equip):</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:0.78rem;color:var(--text1);">
+            <input type="checkbox" class="aequip-skip-cb" value="{{ s }}" style="accent-color:var(--red2);"> {{ s.replace('_',' ')|title }}
+          </label>
+          {% endfor %}
+        </div>
+        <div style="font-size:0.8rem;color:var(--text2);margin-top:5px;">Checked = skip (won't auto-equip that slot)</div>
+      </div>
+      <div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:10px;font-size:0.88rem;color:var(--text2);">
+        ℹ️ Only equips items matching your class. Never downgrades equipped items.
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn-primary" style="flex:1;" onclick="saveAutoEquipSettings()">💾 Save & Close</button>
+      <button class="btn-cancel" style="flex:1;" onclick="closeAutoEquipSettings()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -142,11 +188,11 @@
         <div style="font-family:'Cinzel',serif;font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--gold) 0%,var(--gold3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
           {{ "%.2f"|format(total.v * 100) }}%
         </div>
-        <div style="font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;">
+        <div style="font-size:0.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;">
           ✨ Combined Power ({{ total.count }}/8 slots)
         </div>
         {% if total.count > 0 %}
-        <div style="font-size:0.82rem;color:var(--text2);margin-top:6px;">avg {{ "%.2f"|format(total.v / total.count * 100) }}% per slot</div>
+        <div style="font-size:0.82rem;color:var(--text1);margin-top:6px;">avg {{ "%.2f"|format(total.v / total.count * 100) }}% per slot</div>
         {% endif %}
       </div>
     </div>
@@ -183,10 +229,17 @@
         <button class="filter-btn" data-sort="name-asc"   onclick="setSortInv(this,'name','asc')">📛 Name A-Z</button>
         <button class="filter-btn" data-sort="name-desc"  onclick="setSortInv(this,'name','desc')">📛 Name Z-A</button>
       </div>
-      <input type="text" id="eq-inv-search" placeholder="🔍 Search..."
-             style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
-                    border-radius:5px;padding:5px 10px;font-size:0.8rem;width:160px;"
-             oninput="applyEqFilters()">
+      <select id="eq-class-filter" onchange="applyEqFilters()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text1);border-radius:5px;padding:5px 10px;font-size:0.8rem;cursor:pointer;width:auto;">
+        <option value="all">All Classes</option>
+        <option value="my_class">✅ My Class Only</option>
+        {% set seen_cls = [] %}
+        {% for item in all_inv %}
+          {% for cls in item.get('classes',[]) %}
+            {% if cls not in seen_cls and cls != 'any' %}{% set _ = seen_cls.append(cls) %}<option value="{{ cls }}">{{ class_icons.get(cls,'') }} {{ cls|title }}</option>{% endif %}
+          {% endfor %}
+        {% endfor %}
+      </select>
+      <input type="text" id="eq-inv-search" placeholder="🔍 Search..." style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 10px;font-size:0.8rem;width:88px;" oninput="applyEqFilters()">
     </div>
   </div>
 
@@ -194,7 +247,7 @@
     {% for item in all_inv %}
     {% set power_pct = (item.get('power',0)|float * 100)|round(2) %}
     {% set is_equipped = (item.get('id','')|string) in equipped_ids %}
-    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}" data-power="{{ (item.get('power',0)|float * 100)|round(2) }}" data-name="{{ item.get('item_name','')|lower }}" data-item-id="{{ item.get('id','') }}" data-equipped="{{ 'true' if is_equipped else 'false' }}"
+    <div class="item-card inv-item" data-slot="{{ item.get('slot','') }}" data-power="{{ (item.get('power',0)|float * 100)|round(2) }}" data-name="{{ item.get('item_name','')|lower }}" data-item-id="{{ item.get('id','') }}" data-equipped="{{ 'true' if is_equipped else 'false' }}" data-classes="{{ item.get('classes',[])|join(',') }}"
          style="{% if is_equipped %}border-color:var(--gold);background:rgba(201,168,76,0.07);{% endif %}cursor:pointer;"
          onclick="handleInvClick({{ item.get('id') }}, '{{ item.get('slot','') }}', {{ 'true' if is_equipped else 'false' }}, '{{ item.get('item_name','') }}')">
       {% if is_equipped %}
@@ -279,16 +332,27 @@ function setSortInv(btn, key, dir) {
 }
 
 function applyEqFilters() {
-  const query = (document.getElementById('eq-inv-search').value || '').trim().toLowerCase();
-  const grid  = document.getElementById('inv-grid');
-  const allCards = Array.from(grid.querySelectorAll('.inv-item'));
+  const query     = (document.getElementById('eq-inv-search').value || '').trim().toLowerCase();
+  const clsFilter = (document.getElementById('eq-class-filter')?.value || 'all');
+  const playerCls = (document.getElementById('player-class')?.dataset.class || '').toLowerCase();
+  const grid      = document.getElementById('inv-grid');
+  const allCards  = Array.from(grid.querySelectorAll('.inv-item'));
 
   // Filter
   let visible = allCards.filter(card => {
     const slotOk  = currentSlot === 'all' || card.dataset.slot === currentSlot;
     const nameOk  = !query || card.dataset.name.includes(query);
-    card.style.display = (slotOk && nameOk) ? '' : 'none';
-    return slotOk && nameOk;
+    const classes = (card.dataset.classes || '').toLowerCase().split(',').filter(Boolean);
+    let classOk   = true;
+    if (clsFilter === 'my_class') {
+      classOk = classes.length === 0 || classes.includes('any')
+             || (playerCls && classes.includes(playerCls));
+    } else if (clsFilter !== 'all') {
+      classOk = classes.length === 0 || classes.includes('any')
+             || classes.includes(clsFilter.toLowerCase());
+    }
+    card.style.display = (slotOk && nameOk && classOk) ? '' : 'none';
+    return slotOk && nameOk && classOk;
   });
 
   // Sort
@@ -402,5 +466,105 @@ document.getElementById('equip-modal').addEventListener('click', function(e) {
 
 // Init count
 applyEqFilters();
+
+// ── Auto-Equip Best Items ─────────────────────────────────────────
+const autoEquipCb     = document.getElementById('auto-equip-best');
+const autoEquipStatus = document.getElementById('auto-equip-status');
+let autoEquipInterval = null;
+
+// Restore state from localStorage
+autoEquipCb.checked = localStorage.getItem('autoEquipBest') === '1';
+if (autoEquipCb.checked) { setStatus('⏳ Global runner active — checks every 30s'); setTimeout(runAutoEquip, 3000); }
+
+autoEquipCb.addEventListener('change', () => {
+  localStorage.setItem('autoEquipBest', autoEquipCb.checked ? '1' : '0');
+  if (autoEquipCb.checked) {
+    setStatus('⏳ Active — next check in ~30s');
+    setTimeout(runAutoEquip, 2000);
+  } else {
+    setStatus('');
+  }
+});
+
+function setStatus(msg) {
+  if (autoEquipStatus) autoEquipStatus.textContent = msg;
+}
+
+function loadAutoEquipSettings() {
+  return { skipSlots: JSON.parse(localStorage.getItem('aequip_skip_slots') || '[]') };
+}
+function openAutoEquipSettings() {
+  const { skipSlots } = loadAutoEquipSettings();
+  document.querySelectorAll('.aequip-skip-cb').forEach(cb => cb.checked = skipSlots.includes(cb.value));
+  document.getElementById('auto-equip-modal').style.display = 'flex';
+}
+function closeAutoEquipSettings() {
+  document.getElementById('auto-equip-modal').style.display = 'none';
+}
+function saveAutoEquipSettings() {
+  const skip = Array.from(document.querySelectorAll('.aequip-skip-cb:checked')).map(c => c.value);
+  localStorage.setItem('aequip_skip_slots', JSON.stringify(skip));
+  closeAutoEquipSettings();
+  toast('✅ Auto-equip settings saved');
+}
+document.getElementById('auto-equip-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeAutoEquipSettings();
+});
+
+async function runAutoEquip() {
+  if (!autoEquipCb.checked) return;
+  const playerClass  = (document.getElementById('player-class')?.dataset.class || '').toLowerCase();
+  const { skipSlots } = loadAutoEquipSettings();
+  const allCards     = Array.from(document.querySelectorAll('#inv-grid .inv-item'));
+
+  const equippedPower = {};
+  allCards.filter(c => c.dataset.equipped === 'true').forEach(card => {
+    const slot = card.dataset.slot;
+    const pw   = parseFloat(card.dataset.power || 0);
+    if (!equippedPower[slot] || pw > equippedPower[slot]) equippedPower[slot] = pw;
+  });
+
+  const bestBySlot = {};
+  allCards.filter(c => c.dataset.equipped !== 'true').forEach(card => {
+    const slot = card.dataset.slot;
+    if (skipSlots.includes(slot)) return;
+    const power   = parseFloat(card.dataset.power || 0);
+    const classes = (card.dataset.classes || '').toLowerCase().split(',').filter(Boolean);
+    const classOk = classes.length === 0 || classes.includes('any')
+                 || !playerClass || classes.includes(playerClass);
+    if (!classOk) return;
+    if (!bestBySlot[slot] || power > bestBySlot[slot].power) {
+      bestBySlot[slot] = { id: card.dataset.itemId, power, slot };
+    }
+  });
+
+  const upgrades = Object.values(bestBySlot).filter(b => b.power > (equippedPower[b.slot] ?? -1));
+
+  if (upgrades.length === 0) {
+    setStatus(`ℹ️ ${new Date().toLocaleTimeString()} — no better items suitable for your class found`);
+    return;
+  }
+
+  setStatus(`⚡ Attempting to equip ${upgrades.length} upgrade(s)...`);
+  let equipped = 0;
+  for (const item of upgrades) {
+    const res = await apiAction('/action/equip', { item_id: parseInt(item.id), slot: item.slot });
+    if (res.status === 'success') {
+      equipped++;
+      toast(`⚡ Auto-equipped better ${item.slot}!`);
+    } else {
+      const errorMsg = res.message || res.error || '';
+      if (!errorMsg.includes('class_not_allowed')) {
+        setStatus(`❌ ${item.slot}: ${errorMsg}`);
+      }
+    }
+  }
+  if (equipped > 0) {
+    setStatus(`✅ Auto-equipped ${equipped} item(s) at ${new Date().toLocaleTimeString()}`);
+    setTimeout(() => location.reload(), 1200);
+  } else {
+    setStatus(`ℹ️ No better items suitable for your class found`);
+  }
+}
 </script>
 {% endblock %}

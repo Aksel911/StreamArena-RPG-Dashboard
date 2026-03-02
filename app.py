@@ -2,7 +2,7 @@
 StreamArena RPG — Flask Dashboard
 Disk-based udata cache (bypasses 4KB cookie limit)
 """
-import os, json, hashlib, time, requests
+import os, json, hashlib, time, requests, threading, logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import (Flask, render_template, request, session,
                    redirect, url_for, jsonify)
@@ -12,7 +12,7 @@ app.secret_key = 'streamarena_secret_2026'
 
 API_URL       = 'https://streamarenarpg.com/portal/portal_api.php'
 GUILD_API_URL = 'https://streamarenarpg.com/guild/guild_api.php'
-API_VERSION   = '1.0.0'
+API_VERSION   = '0.32.04'
 HEADERS = {
     'Content-Type': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
@@ -26,7 +26,7 @@ _http.headers.update(HEADERS)
 
 # ── Disk cache (udata ~14KB — way over Flask's 4KB cookie limit) ──────────────
 CACHE_DIR = '/tmp/streamarena_cache'
-CACHE_TTL = 300  # 5 minutes
+CACHE_TTL = 120  # 2 minutes
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 def _cache_path(token):
@@ -59,6 +59,234 @@ CLASS_ICONS = {
     'barbarian':'🪓','tank':'🛡️','rogue':'🗡️',
     'mage':'🔮','summoner':'👁️','healer':'✨','ranger':'🏹',
 }
+
+# ── Auto Worker (server-side background automation) ───────────────────────────
+AUTO_DIR = os.path.join(CACHE_DIR, 'auto')
+os.makedirs(AUTO_DIR, exist_ok=True)
+
+def _auto_path(token: str) -> str:
+    return os.path.join(AUTO_DIR, hashlib.sha256(token.encode()).hexdigest() + '_auto.json')
+
+def auto_load(token: str) -> dict:
+    try:
+        with open(_auto_path(token)) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def auto_save(token: str, data: dict):
+    with open(_auto_path(token), 'w') as f:
+        json.dump(data, f)
+
+def _run_auto_for_user(token: str, settings: dict):
+    """Run all enabled auto features for one user. Called from background thread."""
+    features = settings.get('features', {})
+    gm_cache = None
+
+    def get_gm():
+        nonlocal gm_cache
+        if gm_cache is None:
+            r = _api_call_threaded({'route': 'get_game_items'}, token)
+            gm_cache = {}
+            if r.get('status') == 'success':
+                for item in r.get('items', []):
+                    gm_cache.setdefault(item['slot'], {})[str(item['id'])] = item
+        return gm_cache
+
+    def ann(items):
+        gm = get_gm()
+        for item in items:
+            slot = item.get('slot', '')
+            bid  = str(item.get('base_item_id', '0'))
+            gi   = gm.get(slot, {}).get(bid)
+            item['item_name'] = gi['item_name'] if gi else f'{slot} #{bid}'
+            item['classes']   = gi.get('classes', ['any']) if gi else ['any']
+        return items
+
+    log = logging.getLogger('auto_worker')
+    player_class = settings.get('player_class', '')
+
+    # ── Auto-Equip Best Items ─────────────────────────────────────────
+    if features.get('auto_equip', {}).get('enabled'):
+        try:
+            inv_r  = _api_call_threaded({'route': 'get_inv', 'page': 1}, token)
+            udata  = _api_call_threaded({'route': 'get_udata'}, token)
+            char   = udata.get('characters', [{}])[0] if udata.get('characters') else {}
+            items  = ann(inv_r.get('player_items', []))
+
+            equipped_power = {}
+            equipped_by_slot = {}
+            for k, slot in SLOT_MAP.items():
+                iid = str(char.get(k, '-1'))
+                for it in items:
+                    if str(it.get('id')) == iid:
+                        equipped_power[slot]    = float(it.get('power', 0)) * 100
+                        equipped_by_slot[slot]  = it
+                        break
+
+            best_by_slot = {}
+            for it in items:
+                slot    = it.get('slot', '')
+                iid     = str(it.get('id'))
+                power   = float(it.get('power', 0)) * 100
+                classes = it.get('classes', ['any'])
+                # Skip if equipped
+                if iid in {str(v.get('id')) for v in equipped_by_slot.values() if v}:
+                    continue
+                class_ok = 'any' in classes or not player_class or player_class in classes
+                if not class_ok:
+                    continue
+                if slot not in best_by_slot or power > best_by_slot[slot]['power']:
+                    best_by_slot[slot] = {'id': int(iid), 'power': power, 'slot': slot}
+
+            for slot, best in best_by_slot.items():
+                current = equipped_power.get(slot, -1)
+                if best['power'] > current:
+                    res = _api_call_threaded({'route': 'equip', 'item_id': best['id'], 'slot': slot}, token)
+                    if res.get('status') == 'success':
+                        log.info(f"Auto-equip: equipped {slot} power={best['power']:.1f}%")
+        except Exception as e:
+            log.error(f"auto_equip error: {e}")
+
+    # ── Auto-Delete ────────────────────────────────────────────────────
+    if features.get('auto_delete', {}).get('enabled'):
+        try:
+            cfg = features['auto_delete']
+            power_max = float(cfg.get('power_max', 10))
+            slots     = cfg.get('slots', list(SLOT_MAP.values()))
+
+            inv_r  = _api_call_threaded({'route': 'get_inv', 'page': 1}, token)
+            locks_r = _api_call_threaded({'route': 'get_player_item_locks'}, token)
+            my_l_r  = _api_call_threaded({'route': 'my_listings'}, token)
+            udata   = _api_call_threaded({'route': 'get_udata'}, token)
+
+            locked_ids   = {str(x) for x in locks_r.get('locked_items', [])}
+            listed_ids   = {str(l['id']) for l in my_l_r.get('listings', [])}
+            char         = udata.get('characters', [{}])[0] if udata.get('characters') else {}
+            equipped_ids = {str(char.get(k, '-1')) for k in SLOT_MAP} - {'-1', ''}
+
+            to_delete = []
+            for it in ann(inv_r.get('player_items', [])):
+                iid   = str(it.get('id'))
+                power = float(it.get('power', 0)) * 100
+                if (it.get('slot') in slots and power < power_max
+                        and iid not in locked_ids
+                        and iid not in listed_ids
+                        and iid not in equipped_ids):
+                    to_delete.append(iid)
+
+            for iid in to_delete:
+                _api_call_threaded({'route': 'destroy', 'item_id': iid}, token)
+            if to_delete:
+                log.info(f"Auto-delete: deleted {len(to_delete)} items")
+        except Exception as e:
+            log.error(f"auto_delete error: {e}")
+
+    # ── Auto-List ──────────────────────────────────────────────────────
+    if features.get('auto_list', {}).get('enabled'):
+        try:
+            cfg         = features['auto_list']
+            power_thr   = float(cfg.get('power_threshold', 15))
+            power_mode  = cfg.get('power_mode', 'below')   # 'below' or 'above'
+            slots       = cfg.get('slots', list(SLOT_MAP.values()))
+            gold_cost   = int(cfg.get('gold', 0))
+            plat_cost   = int(cfg.get('plat', 0))
+            gem_cost    = int(cfg.get('gems', 0))
+            if gold_cost == 0 and plat_cost == 0 and gem_cost == 0:
+                pass  # no price set, skip
+            else:
+                inv_r   = _api_call_threaded({'route': 'get_inv', 'page': 1}, token)
+                locks_r = _api_call_threaded({'route': 'get_player_item_locks'}, token)
+                my_l_r  = _api_call_threaded({'route': 'my_listings'}, token)
+                udata   = _api_call_threaded({'route': 'get_udata'}, token)
+
+                locked_ids   = {str(x) for x in locks_r.get('locked_items', [])}
+                listed_ids   = {str(l['id']) for l in my_l_r.get('listings', [])}
+                char         = udata.get('characters', [{}])[0] if udata.get('characters') else {}
+                equipped_ids = {str(char.get(k, '-1')) for k in SLOT_MAP} - {'-1', ''}
+
+                for it in ann(inv_r.get('player_items', [])):
+                    iid   = str(it.get('id'))
+                    power = float(it.get('power', 0)) * 100
+                    match_power = (power < power_thr) if power_mode == 'below' else (power >= power_thr)
+                    if (it.get('slot') in slots and match_power
+                            and iid not in locked_ids
+                            and iid not in listed_ids
+                            and iid not in equipped_ids):
+                        _api_call_threaded({'route': 'list_item', 'item_id': int(iid),
+                            'gold_cost': gold_cost, 'platinum_cost': plat_cost, 'gem_cost': gem_cost}, token)
+                log.info("Auto-list: pass done")
+        except Exception as e:
+            log.error(f"auto_list error: {e}")
+
+    # ── Auto-Equip Consumables ─────────────────────────────────────────
+    if features.get('auto_equip_cons', {}).get('enabled'):
+        try:
+            cons_r = _api_call_threaded({'route': 'get_player_consumables'}, token)
+            equipped_cons = cons_r.get('equipped_consumables', [])
+            all_cons      = cons_r.get('consumables', [])
+
+            # Check which slots are empty
+            filled_slots = {int(ec.get('slot', 0)) for ec in equipped_cons}
+            empty_slots  = [s for s in [1, 2, 3] if s not in filled_slots]
+
+            if empty_slots and all_cons:
+                # Build set of already equipped consumable_ids
+                equipped_cids = {str(ec.get('consumable_id')) for ec in equipped_cons}
+                available = [c for c in all_cons if str(c.get('consumable_id', c.get('id'))) not in equipped_cids]
+                for i, slot in enumerate(empty_slots):
+                    if i >= len(available):
+                        break
+                    cid = available[i].get('consumable_id', available[i].get('id'))
+                    _api_call_threaded({'route': 'equip_consumable', 'consumable_id': cid, 'slot': slot}, token)
+                log.info(f"Auto-equip-cons: filled {len(empty_slots)} empty slot(s)")
+        except Exception as e:
+            log.error(f"auto_equip_cons error: {e}")
+
+    # ── Auto-Open Chests ───────────────────────────────────────────────
+    if features.get('auto_open_chests', {}).get('enabled'):
+        try:
+            chests_r = _api_call_threaded({'route': 'get_player_chests'}, token)
+            for chest in chests_r.get('chests', []):
+                if int(chest.get('amount', 0)) > 0:
+                    _api_call_threaded({'route': 'open_multi_player_chests', 'chest_id': int(chest.get('chest_id', 0))}, token)
+            log.info("Auto-open-chests: pass done")
+        except Exception as e:
+            log.error(f"auto_open_chests error: {e}")
+
+
+def _auto_worker_loop():
+    """Background thread: runs auto features for all users every 30s."""
+    logging.basicConfig(level=logging.INFO)
+    log = logging.getLogger('auto_worker')
+    while True:
+        try:
+            if os.path.isdir(AUTO_DIR):
+                for fname in os.listdir(AUTO_DIR):
+                    if not fname.endswith('_auto.json'):
+                        continue
+                    fpath = os.path.join(AUTO_DIR, fname)
+                    try:
+                        with open(fpath) as f:
+                            settings = json.load(f)
+                        token = settings.get('token')
+                        if not token:
+                            continue
+                        features = settings.get('features', {})
+                        any_enabled = any(v.get('enabled') for v in features.values() if isinstance(v, dict))
+                        if any_enabled:
+                            _run_auto_for_user(token, settings)
+                    except Exception as e:
+                        log.error(f"Worker error for {fname}: {e}")
+        except Exception as e:
+            log.error(f"Worker loop error: {e}")
+        time.sleep(30)
+
+
+# Start background auto-worker thread (daemon so it exits with Flask)
+_auto_thread = threading.Thread(target=_auto_worker_loop, daemon=True, name='auto_worker')
+_auto_thread.start()
+
 NO_VERSION_ROUTES = {
     'my_listings','get_listings','toggle_item_lock','destroy','equip','unequip',
     'redeem_voucher','get_skills','get_backs','get_shaders','list_item',
@@ -343,7 +571,8 @@ def market():
         slot_icons=SLOT_ICONS, class_icons=CLASS_ICONS,
         player_gold=int(user.get('gold',0)),
         player_plat=int(user.get('platinum',0)),
-        player_gems=int(user.get('gems',0)))
+        player_gems=int(user.get('gems',0)),
+        my_username=session.get('username',''))
 
 # ── Guild ─────────────────────────────────────────────────────────────────────
 @app.route('/guild')
@@ -616,6 +845,93 @@ def action_cancel_listing():
     if r := _req(): return r
     d = request.get_json()
     return jsonify(api_call({'route':'cancel_listing','item_id':int(d.get('item_id',0))}))
+
+
+@app.route('/action/daily_spin', methods=['POST'])
+def action_daily_spin():
+    if r := _req(): return r
+    return jsonify(api_call({'route': 'daily_spin'}))
+
+@app.route('/auto/save', methods=['POST'])
+def auto_save_settings():
+    if r := _req(): return r
+    d = request.get_json()
+    token = session.get('token')
+    udata = get_udata()
+    char  = udata.get('characters', [{}])[0] if udata.get('characters') else {}
+    settings = auto_load(token)
+    settings['token']        = token
+    settings['player_class'] = char.get('class', '')
+    settings['features']     = d.get('features', settings.get('features', {}))
+    auto_save(token, settings)
+    return jsonify({'status': 'success'})
+
+@app.route('/auto/status')
+def auto_get_status():
+    if not session.get('token'):
+        return jsonify({'error': 'unauthorized'}), 401
+    s = auto_load(session['token'])
+    return jsonify({
+        'features': s.get('features', {}),
+        'player_class': s.get('player_class', ''),
+    })
+
+@app.route('/api/auto_data')
+def api_auto_data():
+    """Single endpoint for all auto-features — called from global base.html runner."""
+    if not session.get('token'):
+        return jsonify({'error': 'unauthorized'}), 401
+    udata = get_udata()
+    char  = udata.get('characters', [{}])[0] if udata.get('characters') else {}
+
+    results = parallel_api_calls({
+        'spin':        {'route': 'get_next_daily_spin'},
+        'consumables': {'route': 'get_consumables'},
+        'chests':      {'route': 'get_player_chests'},
+        'locks':       {'route': 'get_player_item_locks'},
+        'my_listings': {'route': 'my_listings'},
+    })
+
+    gm           = get_game_items_dict()
+    items        = annotate_items(list(udata.get('player_items', [])), gm)
+    locked_ids   = {str(x) for x in results['locks'].get('locked_items', [])}
+    listed_ids   = {str(l['id']) for l in results['my_listings'].get('listings', [])}
+    equipped_ids = get_equipped_ids(udata)
+
+    slim_items = []
+    for it in items:
+        slim_items.append({
+            'id':          it.get('id'),
+            'slot':        it.get('slot', ''),
+            'power':       round(float(it.get('power', 0)) * 100, 2),
+            'classes':     it.get('classes', ['any']),
+            'item_name':   it.get('item_name', ''),
+            'is_equipped': str(it['id']) in equipped_ids,
+            'is_locked':   str(it['id']) in locked_ids,
+            'is_listed':   str(it['id']) in listed_ids,
+        })
+
+    return jsonify({
+        'spin':         results['spin'],
+        'consumables':  results['consumables'],
+        'chests':       results['chests'],
+        'player_class': char.get('class', ''),
+        'items':        slim_items,
+    })
+
+
+@app.route('/action/cancel_all_listings', methods=['POST'])
+def action_cancel_all_listings():
+    if r := _req(): return r
+    my = api_call({'route': 'my_listings'})
+    listings = my.get('listings', [])
+    ok, fail = 0, 0
+    for item in listings:
+        res = api_call({'route': 'cancel_listing', 'item_id': int(item['id'])})
+        if res.get('status') == 'success': ok += 1
+        else: fail += 1
+    return jsonify({'status': 'success', 'cancelled': ok, 'failed': fail})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

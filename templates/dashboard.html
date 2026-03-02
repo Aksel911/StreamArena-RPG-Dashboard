@@ -146,9 +146,9 @@
           <div>
             <div style="font-size:0.85rem;font-weight:600;color:var(--text);">{{ c.get('name','?') }}</div>
             {% if c.get('effect_value') %}
-            <div style="font-size:0.7rem;color:var(--teal2);">{{ c.get('effect_key','') }}: {{ c.get('effect_value') }}%</div>
+            <div style="font-size:0.8rem;color:var(--teal2);">{{ c.get('effect_key', '') | capitalize }}: {{ c.get('effect_value') }}%</div>
             {% else %}
-            <div style="font-size:0.7rem;color:var(--text3);">{{ c.get('effect_key','') }}</div>
+            <div style="font-size:0.8rem;color:var(--text2);">{{ c.get('effect_key', '') | capitalize }}</div>
             {% endif %}
           </div>
         </div>
@@ -186,11 +186,27 @@
   <div class="card">
     <div class="card-title">📦 Chests & Rewards</div>
 
-    {% if spin.get('next_spin_unix') %}
-    <div style="margin-bottom:14px;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
-      <div style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold3);text-transform:uppercase;letter-spacing:0.1em;">🎡 Daily Spin</div>
-      <div style="font-size:0.85rem;color:var(--text2);margin-top:4px;" id="spin-timer" data-ts="{{ spin.get('next_spin_unix', 0) }}">
-        Loading...
+    {% if 'next_spin_unix' in spin %}
+    <div style="margin-bottom:14px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold3);text-transform:uppercase;letter-spacing:0.1em;">🎡 Daily Spin</div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.75rem;color:var(--text3);">
+          <input type="checkbox" id="auto-spin" style="accent-color:var(--gold);width:14px;height:14px;">
+          <span>Auto-Spin</span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="font-size:0.85rem;color:var(--text2);" id="spin-timer" data-ts="{{ spin.get('next_spin_unix', 0) }}">
+          Loading...
+        </div>
+        <button id="spin-btn" class="btn-primary" style="padding:6px 16px;font-size:0.82rem;display:none;" onclick="doSpin()">
+          🎡 Spin!
+        </button>
+      </div>
+      {# Reward display #}
+      <div id="spin-reward" style="display:none;margin-top:10px;padding:10px 14px;background:var(--bg2);border-radius:6px;border:1px solid rgba(201,168,76,0.3);animation:fadeUp 0.3s ease;">
+        <div style="font-family:'Cinzel',serif;font-size:0.7rem;color:var(--gold3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">🎁 Reward Received!</div>
+        <div id="spin-reward-text" style="font-size:0.95rem;color:var(--gold2);font-weight:600;"></div>
       </div>
     </div>
     {% endif %}
@@ -222,12 +238,44 @@
 </div>
 
 <script>
-const spinEl = document.getElementById('spin-timer');
+// ── Daily Spin ────────────────────────────────────────────────────
+const spinEl  = document.getElementById('spin-timer');
+const spinBtn = document.getElementById('spin-btn');
+let spinReady = false;
+let autoSpinTriggered = false;
+
+// Restore auto-spin state
+const autoSpinCb = document.getElementById('auto-spin');
+if (autoSpinCb) {
+  autoSpinCb.checked = localStorage.getItem('autoSpin') === '1';
+  autoSpinCb.addEventListener('change', () => {
+    localStorage.setItem('autoSpin', autoSpinCb.checked ? '1' : '0');
+  });
+}
+
+function setSpinReady(ready) {
+  spinReady = ready;
+  if (!spinEl) return;
+  if (ready) {
+    spinEl.textContent = '✅ Ready to spin!';
+    spinEl.style.color = 'var(--teal2)';
+    if (spinBtn) spinBtn.style.display = '';
+    // Auto-spin: trigger once
+    if (autoSpinCb && autoSpinCb.checked && !autoSpinTriggered) {
+      autoSpinTriggered = true;
+      setTimeout(doSpin, 1200);
+    }
+  } else {
+    if (spinBtn) spinBtn.style.display = 'none';
+  }
+}
+
 if (spinEl) {
   const ts = parseInt(spinEl.dataset.ts, 10) * 1000;
   function updateTimer() {
     const diff = ts - Date.now();
-    if (diff <= 0) { spinEl.textContent = '✅ Ready to spin!'; spinEl.style.color = 'var(--teal2)'; return; }
+    if (diff <= 0) { setSpinReady(true); return; }
+    setSpinReady(false);
     const h = Math.floor(diff / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
@@ -235,6 +283,31 @@ if (spinEl) {
   }
   updateTimer();
   setInterval(updateTimer, 1000);
+}
+
+async function doSpin() {
+  if (!spinReady) return;
+  const btn = document.getElementById('spin-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Spinning...'; }
+  const res = await apiAction('/action/daily_spin', {});
+  if (btn) { btn.disabled = false; btn.textContent = '🎡 Spin!'; }
+  if (res.status === 'success') {
+    spinReady = false;
+    if (btn) btn.style.display = 'none';
+    const rewardEl = document.getElementById('spin-reward');
+    const rewardTxt = document.getElementById('spin-reward-text');
+    if (rewardEl && rewardTxt) {
+      rewardTxt.textContent = res.reward || 'Unknown reward';
+      rewardEl.style.display = '';
+    }
+    if (spinEl) {
+      spinEl.textContent = '✅ Spin used! Reload to refresh timer.';
+      spinEl.style.color = 'var(--teal2)';
+    }
+    toast('🎡 Spin! Got: ' + (res.reward || 'reward'));
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Spin failed'), false);
+  }
 }
 
 async function redeemVoucher() {

@@ -72,11 +72,15 @@
 <div style="display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;align-items:center;">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text2);">
     <input type="checkbox" id="toggle-equipped" style="accent-color:var(--teal2);width:16px;height:16px;">
-    <span>🟢 Show Equipped</span>
+    <span class="btn-sm btn-outline-gray">🟢 Show Equipped</span>
   </label>
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text2);">
     <input type="checkbox" id="toggle-listed" style="accent-color:var(--gold);width:16px;height:16px;">
-    <span>💰 Show Listed</span>
+    <span class="btn-sm btn-outline-gray">💰 Show Listed</span>
+  </label>
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text2);">
+    <input type="checkbox" id="toggle-locked" style="accent-color:var(--gold);width:16px;height:16px;">
+    <span class="btn-sm btn-outline-gray">🔒 Show Locked</span>
   </label>
   <span id="inv-count" style="font-size:0.8rem;color:var(--text3);margin-left:auto;"></span>
 </div>
@@ -85,7 +89,7 @@
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
     <input type="checkbox" id="select-all" style="width:18px;height:18px;accent-color:var(--gold2);">
-    <span style="color:var(--text2);font-size:0.88rem;">Select All</span>
+    <span class="btn-sm btn-outline-gray" style="color:var(--text2);font-size:0.88rem;">Select All</span>
   </label>
   <span id="selected-counter" style="color:var(--text2);font-size:0.88rem;background:var(--bg3);padding:4px 12px;border-radius:20px;border:1px solid var(--border);">
     Selected: 0
@@ -94,6 +98,40 @@
           style="display:flex;align-items:center;gap:6px;padding:6px 14px;">
     🗑️ Delete Selected
   </button>
+</div>
+
+{# ── Auto-Actions panel ─────────────────────────────────────────── #}
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+
+  {# Auto-Delete #}
+  <div class="auto-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="auto-delete-cb" style="accent-color:var(--red2);width:16px;height:16px;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:600;color:var(--text);">🗑️ Auto-Delete Items</div>
+          <div style="font-size:0.88rem;color:var(--text2);">Deletes matching items every 30s</div>
+        </div>
+      </label>
+      <button class="btn-sm btn-outline-gray" style="font-size:0.91rem; width:auto; max-width:fit-content;" onclick="openAutoDeleteSettings()">⚙️ Settings</button>
+    </div>
+    <div id="auto-delete-status" style="font-size:0.9rem;color:var(--text2);"></div>
+  </div>
+
+  {# Auto-List #}
+  <div class="auto-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="auto-list-cb" style="accent-color:var(--gold);width:16px;height:16px;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:600;color:var(--text);">⚖️ Auto-List Items</div>
+          <div style="font-size:0.88rem;color:var(--text2);">Lists matching items every 30s</div>
+        </div>
+      </label>
+      <button class="btn-sm btn-outline-gray" style="font-size:0.91rem; width:auto; max-width:fit-content;" onclick="openAutoListSettings()">⚙️ Settings</button>
+    </div>
+    <div id="auto-list-status" style="font-size:0.9rem;color:var(--text2);"></div>
+  </div>
 </div>
 
 {# ── Sort items ─────────────────────────────────────────────────── #}
@@ -116,12 +154,15 @@
   {% set is_eq      = item.get('is_equipped', false) %}
   {% set is_listed  = item.get('is_listed', false) %}
   <div class="item-card {% if item.get('is_locked') %}locked{% endif %}"
-       style="position:relative;{% if is_eq %}border-color:var(--teal2) !important;{% endif %}"
+       style="position:relative;{% if is_eq %}border-color:var(--teal2) !important; background: rgba(3, 117, 74, 0.04);{% endif %}{% if is_listed %}border-color:var(--red2) !important; background: rgba(139, 7, 95, 0.04);{% endif %}"
        data-slot="{{ item.get('slot','') }}"
        data-classes="{{ item.get('classes',[])|join(',') }}"
        data-name="{{ item.get('item_name','') }}"
        data-equipped="{{ 'true' if is_eq else 'false' }}"
-       data-listed="{{ 'true' if is_listed else 'false' }}">
+       data-listed="{{ 'true' if is_listed else 'false' }}"
+       data-locked="{{ 'true' if item.get('is_locked') else 'false' }}"
+       data-power="{{ power_pct }}"
+       data-item-id="{{ item.get('id','') }}">
 
     {# Checkbox — only for unlisted, unlocked items #}
     {% if not item.get('is_locked') and not is_listed %}
@@ -138,7 +179,8 @@
       <div style="min-width:0;">
         <div class="item-name">
           {% if is_eq %}<span style="color:var(--teal2);">🟢[Equipped] </span>{% endif %}
-          {% if is_listed %}<span style="color:#d4a030;">💰[$$$] </span>{% endif %}
+          {% if is_listed %}<span style="color:#d4a030;">💰[Listed] </span>{% endif %}
+          {% if item.get('is_locked') %}<span style="color:#d4a030;">🔒[Locked] </span>{% endif %}
           {{ item.get('item_name','?') }}
         </div>
         <div class="item-id">#{{ item.get('id') }}</div>
@@ -174,7 +216,7 @@
 
     <div class="item-classes">
       {% for cls in item.get('classes',[]) %}
-      <span class="class-tag">{{ class_icons.get(cls,'') }} {{ cls }}</span>
+      <span class="class-tag">{{ class_icons.get(cls,'') }} {{ cls | capitalize }}</span>
       {% endfor %}
     </div>
 
@@ -184,8 +226,7 @@
       {% else %}
       <button class="btn-sm btn-lock" onclick="toggleLock({{ item.get('id') }}, true)">🔒 Lock</button>
       {% if not is_listed %}
-      <button class="btn-sm" style="background:rgba(85,128,216,0.15);border:1px solid rgba(85,128,216,0.35);color:var(--blue2);border-radius:4px;font-size:0.72rem;padding:4px 8px;cursor:pointer;"
-              onclick="openListModal({{ item.get('id') }}, '{{ item.get('item_name','?')|replace("'","") }}')">⚖️ Market</button>
+      <button class="btn-sm btn-outline-blue" onclick="openListModal({{ item.get('id') }}, '{{ item.get('item_name','?')|replace("'","") }}')">⚖️ Market</button>
       <button class="btn-sm btn-danger" onclick="destroyItem({{ item.get('id') }}, '{{ item.get('item_name','?')|replace("'","") }}')">🗑️</button>
       {% else %}
       <span style="font-size:0.7rem;color:#d4a030;padding:4px 8px;">On market</span>
@@ -251,6 +292,125 @@
   </div>
 </div>
 
+{# ── Auto-Delete Settings Modal ──────────────────────────────────── #}
+<div id="auto-delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid rgba(161,32,32,0.4);border-radius:12px;padding:24px;min-width:340px;max-width:460px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--red2);">⚙️ Auto-Delete Settings</div>
+      <button onclick="closeAutoDeleteSettings()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:0.9rem;color:var(--text2);display:block;margin-bottom:6px;">Power filter mode</label>
+        <div style="display:flex;gap:16px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);">
+            <input type="radio" name="adel-mode" value="below" id="adel-mode-below" checked style="accent-color:var(--red2);"> Delete BELOW %
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);">
+            <input type="radio" name="adel-mode" value="above" id="adel-mode-above" style="accent-color:var(--red2);"> Delete ABOVE %
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="adel-power-thresh" min="0" max="100" value="10" style="width:90px;">
+          <span style="font-size:0.88rem;color:var(--text1);">% power threshold</span>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.88rem;color:var(--text1);display:block;margin-bottom:6px;">Slots to auto-delete from</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:0.78rem;color:var(--gold3);">
+            <input type="checkbox" id="adel-all-slots" checked onchange="toggleAllDelSlots(this.checked)" style="accent-color:var(--red2);"> All
+          </label>
+          {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:0.78rem;color:var(--text2);">
+            <input type="checkbox" class="adel-slot-cb" value="{{ s }}" style="accent-color:var(--red2);" checked> {{ s.replace('_',' ') }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="background:rgba(161,32,32,0.08);border:1px solid rgba(161,32,32,0.25);border-radius:6px;padding:10px;font-size:0.9rem;color:#cc6666;">
+        ⚠️ Will never delete equipped, locked, or listed items.
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn-primary" style="flex:1;" onclick="saveAutoDeleteSettings()">💾 Save & Close</button>
+      <button class="btn-cancel" style="flex:1;" onclick="closeAutoDeleteSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+{# ── Auto-List Settings Modal ──────────────────────────────────────── #}
+<div id="auto-list-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid rgba(201,168,76,0.3);border-radius:12px;padding:24px;min-width:340px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold2);">⚙️ Auto-List Settings</div>
+      <button onclick="closeAutoListSettings()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <label style="font-size:0.9rem;color:var(--text2);display:block;margin-bottom:6px;">Power filter mode</label>
+        <div style="display:flex;gap:16px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);">
+            <input type="radio" name="alist-mode" value="below" id="alist-mode-below" checked style="accent-color:var(--gold);"> List BELOW %
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);">
+            <input type="radio" name="alist-mode" value="above" id="alist-mode-above" style="accent-color:var(--gold);"> List ABOVE %
+          </label>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="alist-power-thresh" min="0" max="100" value="15" style="width:90px;">
+          <span style="font-size:0.88rem;color:var(--text1);">% power threshold</span>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.9rem;color:var(--text2);display:block;margin-bottom:6px;">Listing Price (at least one non-zero)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div>
+            <label style="font-size:0.88rem;color:var(--text1);display:block;margin-bottom:3px;">🪙 Gold</label>
+            <input type="number" id="alist-gold" min="0" value="0" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:0.88rem;color:var(--text1);display:block;margin-bottom:3px;">🪨 Platinum</label>
+            <input type="number" id="alist-plat" min="0" value="0" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:0.88rem;color:var(--text1);display:block;margin-bottom:3px;">💎 Gems</label>
+            <input type="number" id="alist-gems" min="0" value="0" style="width:100%;">
+          </div>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text2);margin-top:4px;">Fee: Gold×10% + Plat×100,000 gold. Gems free.</div>
+      </div>
+      <div>
+        <label style="font-size:0.9rem;color:var(--text1);display:block;margin-bottom:4px;">Min batch size (0 = no minimum)</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="alist-min-count" min="0" value="0" style="width:90px;">
+          <span style="font-size:0.88rem;color:var(--text2);">items required before listing</span>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.9em;color:var(--text1);display:block;margin-bottom:6px;">Slots to auto-list from</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--bg4);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:0.88rem;color:var(--gold3);">
+            <input type="checkbox" id="alist-all-slots" checked onchange="toggleAllListSlots(this.checked)" style="accent-color:var(--gold);"> All
+          </label>
+          {% for s in ['weapon','off_hand','head','body','hands','feet','ring','neck'] %}
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 8px;font-size:0.88rem;color:var(--text2);">
+            <input type="checkbox" class="alist-slot-cb" value="{{ s }}" style="accent-color:var(--gold);" checked> {{ s.replace('_',' ') }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:10px;font-size:0.88rem;color:var(--text2);">
+        ℹ️ Will never list equipped, locked, or already listed items.
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;">
+      <button class="btn-primary" style="flex:1;" onclick="saveAutoListSettings()">💾 Save & Close</button>
+      <button class="btn-cancel" style="flex:1;" onclick="closeAutoListSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 let listItemId = null;
@@ -299,27 +459,31 @@ document.getElementById('list-modal').addEventListener('click', function(e) { if
 // ── Client-side filter engine ─────────────────────────────────────────────────
 const classSelect   = document.getElementById('class-filter-select');
 const searchInput   = document.getElementById('inv-search');
-const toggleEq      = document.getElementById('toggle-equipped');  // checkbox — show equipped
-const toggleListed  = document.getElementById('toggle-listed');    // checkbox — show listed
+const toggleEq      = document.getElementById('toggle-equipped');
+const toggleListed  = document.getElementById('toggle-listed');
+const toggleLocked  = document.getElementById('toggle-locked');
 const countEl       = document.getElementById('inv-count');
 const allCards      = Array.from(document.querySelectorAll('#inv-grid .item-card'));
 
 function applyFilters() {
-  const cls       = classSelect.value;
-  const query     = searchInput.value.trim().toLowerCase();
-  const showEq    = toggleEq.checked;
-  const showList  = toggleListed.checked;
+  const cls        = classSelect ? classSelect.value : 'all';
+  const query      = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const showEq     = toggleEq ? toggleEq.checked : true;
+  const showList   = toggleListed ? toggleListed.checked : true;
+  const showLocked = toggleLocked ? toggleLocked.checked : true;
 
   let visible = 0;
   allCards.forEach(card => {
     const isEquipped = card.dataset.equipped === 'true';
     const isListed   = card.dataset.listed   === 'true';
-    const classes    = card.dataset.classes.split(',');
-    const name       = card.dataset.name.toLowerCase();
+    const isLocked   = card.dataset.locked   === 'true';
+    const classes    = (card.dataset.classes || '').split(',').filter(Boolean);
+    const name       = (card.dataset.name || '').toLowerCase();
 
     // Visibility rules
     if (!showEq   && isEquipped) { card.style.display = 'none'; return; }
     if (!showList  && isListed)  { card.style.display = 'none'; return; }
+    if (!showLocked && isLocked)  { card.style.display = 'none'; return; }
     if (cls !== 'all' && !classes.includes(cls)) { card.style.display = 'none'; return; }
     if (query && !name.includes(query)) { card.style.display = 'none'; return; }
 
@@ -331,9 +495,10 @@ function applyFilters() {
   updateSelectionUI();
 }
 
-classSelect.addEventListener('change', applyFilters);
-toggleEq.addEventListener('change', applyFilters);
-toggleListed.addEventListener('change', applyFilters);
+if (classSelect)  classSelect.addEventListener('change', applyFilters);
+if (toggleEq)     toggleEq.addEventListener('change', applyFilters);
+if (toggleListed) toggleListed.addEventListener('change', applyFilters);
+if (toggleLocked) toggleLocked.addEventListener('change', applyFilters);
 
 // ── Mass delete ───────────────────────────────────────────────────────────────
 const selectAllCb  = document.getElementById('select-all');
@@ -390,5 +555,216 @@ deleteBtn.addEventListener('click', async function() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 applyFilters();   // sets initial count + respects defaults (equipped/listed hidden)
+
+// ── Auto-Delete ───────────────────────────────────────────────────────────────
+const autoDelCb     = document.getElementById('auto-delete-cb');
+const autoDelStatus = document.getElementById('auto-delete-status');
+let   autoDelTimer  = null;
+
+function loadAutoDeleteSettings() {
+  return {
+    powerMax: parseFloat(localStorage.getItem('adel_power') ?? '10'),
+    mode:     localStorage.getItem('adel_mode') ?? 'below',
+    slots:    JSON.parse(localStorage.getItem('adel_slots') ?? 'null') ?? ['weapon','off_hand','head','body','hands','feet','ring','neck']
+  };
+}
+
+function openAutoDeleteSettings() {
+  const s = loadAutoDeleteSettings();
+  const thr = document.getElementById('adel-power-thresh');
+  if (thr) thr.value = s.powerMax;
+  const modeAbove = document.getElementById('adel-mode-above');
+  const modeBelow = document.getElementById('adel-mode-below');
+  if (modeAbove && modeBelow) {
+    if (s.mode === 'above') modeAbove.checked = true; else modeBelow.checked = true;
+  }
+  document.querySelectorAll('.adel-slot-cb').forEach(cb => cb.checked = s.slots.includes(cb.value));
+  const allCb = document.getElementById('adel-all-slots');
+  if (allCb) allCb.checked = document.querySelectorAll('.adel-slot-cb:not(:checked)').length === 0;
+  const modal = document.getElementById('auto-delete-modal');
+  if (modal) { modal.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9999;align-items:center;justify-content:center;'; }
+}
+function closeAutoDeleteSettings() {
+  const modal = document.getElementById('auto-delete-modal');
+  if (modal) modal.style.display = 'none';
+}
+function toggleAllDelSlots(checked) {
+  document.querySelectorAll('.adel-slot-cb').forEach(cb => cb.checked = checked);
+}
+function saveAutoDeleteSettings() {
+  const power = parseFloat(document.getElementById('adel-power-thresh').value) || 10;
+  const mode  = document.querySelector('input[name="adel-mode"]:checked')?.value || 'below';
+  const slots = Array.from(document.querySelectorAll('.adel-slot-cb:checked')).map(c => c.value);
+  localStorage.setItem('adel_power', power);
+  localStorage.setItem('adel_mode',  mode);
+  localStorage.setItem('adel_slots', JSON.stringify(slots));
+  closeAutoDeleteSettings();
+  toast('✅ Auto-delete settings saved');
+}
+
+autoDelCb.checked = localStorage.getItem('autoDeleteEnabled') === '1';
+if (autoDelCb.checked) startAutoDelete();
+
+autoDelCb.addEventListener('change', () => {
+  localStorage.setItem('autoDeleteEnabled', autoDelCb.checked ? '1' : '0');
+  autoDelCb.checked ? startAutoDelete() : stopAutoDelete();
+});
+
+function startAutoDelete() {
+  autoDelStatus.textContent = '⏳ Starting in 5s...';
+  setTimeout(runAutoDelete, 5000);
+  if (autoDelTimer) clearInterval(autoDelTimer);
+  autoDelTimer = setInterval(runAutoDelete, 30000);
+}
+function stopAutoDelete() {
+  clearInterval(autoDelTimer); autoDelTimer = null;
+  autoDelStatus.textContent = '';
+}
+
+async function runAutoDelete() {
+  if (!autoDelCb.checked) return;
+  const { powerMax, mode, slots } = loadAutoDeleteSettings();
+  const candidates = Array.from(document.querySelectorAll('#inv-grid .item-card')).filter(card => {
+    if (card.dataset.equipped === 'true' || card.dataset.locked === 'true' || card.dataset.listed === 'true') return false;
+    if (!slots.includes(card.dataset.slot)) return false;
+    const p = parseFloat(card.dataset.power || 0);
+    return mode === 'above' ? p > powerMax : p < powerMax;
+  });
+  if (candidates.length === 0) {
+    autoDelStatus.textContent = `ℹ️ ${new Date().toLocaleTimeString()} — no items that can be deleted`;
+    return;
+  }
+  autoDelStatus.textContent = `🗑️ Deleting ${candidates.length} item(s)...`;
+  const ids = candidates.map(c => c.dataset.itemId).filter(Boolean);
+  const res = await apiAction('/action/destroy_items', { item_ids: ids });
+  if (res.status === 'success' || res.status === 'partial') {
+    autoDelStatus.textContent = `✅ ${new Date().toLocaleTimeString()} — deleted ${res.deleted_count || ids.length}`;
+    toast(`🗑️ Auto-deleted ${res.deleted_count || ids.length} item(s)`);
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    autoDelStatus.textContent = `❌ ${new Date().toLocaleTimeString()} — failed`;
+  }
+}
+
+// ── Auto-List ─────────────────────────────────────────────────────────────────
+const autoListCb     = document.getElementById('auto-list-cb');
+const autoListStatus = document.getElementById('auto-list-status');
+let   autoListTimer  = null;
+
+function loadAutoListSettings() {
+  return {
+    powerMax:  parseFloat(localStorage.getItem('alist_power')     ?? '15'),
+    mode:      localStorage.getItem('alist_mode')               ?? 'below',
+    slots:     JSON.parse(localStorage.getItem('alist_slots')    ?? 'null') ?? ['weapon','off_hand','head','body','hands','feet','ring','neck'],
+    gold:      parseInt(localStorage.getItem('alist_gold')       ?? '0'),
+    plat:      parseInt(localStorage.getItem('alist_plat')       ?? '0'),
+    gems:      parseInt(localStorage.getItem('alist_gems')       ?? '0'),
+    minCount:  parseInt(localStorage.getItem('alist_min_count')  ?? '0'),
+  };
+}
+
+function openAutoListSettings() {
+  const s = loadAutoListSettings();
+  const thr = document.getElementById('alist-power-thresh');
+  if (thr) thr.value = s.powerMax;
+  const modeAbove = document.getElementById('alist-mode-above');
+  const modeBelow = document.getElementById('alist-mode-below');
+  if (modeAbove && modeBelow) {
+    if (s.mode === 'above') modeAbove.checked = true; else modeBelow.checked = true;
+  }
+  const g = document.getElementById('alist-gold'); if (g) g.value = s.gold;
+  const p = document.getElementById('alist-plat'); if (p) p.value = s.plat;
+  const e = document.getElementById('alist-gems'); if (e) e.value = s.gems;
+  const mc = document.getElementById('alist-min-count'); if (mc) mc.value = s.minCount;
+  document.querySelectorAll('.alist-slot-cb').forEach(cb => cb.checked = s.slots.includes(cb.value));
+  const allCb = document.getElementById('alist-all-slots');
+  if (allCb) allCb.checked = document.querySelectorAll('.alist-slot-cb:not(:checked)').length === 0;
+  const modal = document.getElementById('auto-list-modal');
+  if (modal) { modal.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:9999;align-items:center;justify-content:center;'; }
+}
+function closeAutoListSettings() {
+  const modal = document.getElementById('auto-list-modal');
+  if (modal) modal.style.display = 'none';
+}
+function toggleAllListSlots(checked) {
+  document.querySelectorAll('.alist-slot-cb').forEach(cb => cb.checked = checked);
+}
+function saveAutoListSettings() {
+  const power = parseFloat(document.getElementById('alist-power-thresh').value) || 15;
+  const mode  = document.querySelector('input[name="alist-mode"]:checked')?.value || 'below';
+  localStorage.setItem('alist_power',     power);
+  localStorage.setItem('alist_mode',      mode);
+  localStorage.setItem('alist_gold',      document.getElementById('alist-gold').value || '0');
+  localStorage.setItem('alist_plat',      document.getElementById('alist-plat').value || '0');
+  localStorage.setItem('alist_gems',      document.getElementById('alist-gems').value || '0');
+  localStorage.setItem('alist_min_count', document.getElementById('alist-min-count').value || '0');
+  const slots = Array.from(document.querySelectorAll('.alist-slot-cb:checked')).map(c => c.value);
+  localStorage.setItem('alist_slots', JSON.stringify(slots));
+  closeAutoListSettings();
+  toast('✅ Auto-list settings saved');
+}
+
+autoListCb.checked = localStorage.getItem('autoListEnabled') === '1';
+if (autoListCb.checked) startAutoList();
+
+autoListCb.addEventListener('change', () => {
+  localStorage.setItem('autoListEnabled', autoListCb.checked ? '1' : '0');
+  autoListCb.checked ? startAutoList() : stopAutoList();
+});
+
+function startAutoList() {
+  autoListStatus.textContent = '⏳ Starting in 5s...';
+  setTimeout(runAutoList, 5000);
+  if (autoListTimer) clearInterval(autoListTimer);
+  autoListTimer = setInterval(runAutoList, 30000);
+}
+function stopAutoList() {
+  clearInterval(autoListTimer); autoListTimer = null;
+  autoListStatus.textContent = '';
+}
+
+async function runAutoList() {
+  if (!autoListCb.checked) return;
+  const { powerMax, mode, slots, gold, plat, gems, minCount } = loadAutoListSettings();
+  if (gold === 0 && plat === 0 && gems === 0) {
+    autoListStatus.textContent = '⚠️ Set a listing price in Settings first';
+    return;
+  }
+  const candidates = Array.from(document.querySelectorAll('#inv-grid .item-card')).filter(card => {
+    if (card.dataset.equipped === 'true' || card.dataset.locked === 'true' || card.dataset.listed === 'true') return false;
+    if (!slots.includes(card.dataset.slot)) return false;
+    const p = parseFloat(card.dataset.power || 0);
+    return mode === 'above' ? p > powerMax : p < powerMax;
+  });
+  if (minCount > 0 && candidates.length < minCount) {
+    autoListStatus.textContent = `⏳ Waiting for ${minCount} items (have ${candidates.length})`;
+    return;
+  }
+  if (candidates.length === 0) {
+    autoListStatus.textContent = `✅ ${new Date().toLocaleTimeString()} — nothing to list`;
+    return;
+  }
+  autoListStatus.textContent = `⚖️ Listing ${candidates.length} item(s)...`;
+  let listed = 0, errors = 0;
+  for (const card of candidates) {
+    const id = card.dataset.itemId;
+    if (!id) continue;
+    const res = await apiAction('/action/list_item', { item_id: parseInt(id), gold_cost: gold, platinum_cost: plat, gem_cost: gems });
+    if (res.status === 'success') listed++;
+    else errors++;
+  }
+  autoListStatus.textContent = `✅ ${new Date().toLocaleTimeString()} — listed ${listed}${errors ? ', ' + errors + ' failed' : ''}`;
+  if (listed > 0) {
+    toast(`⚖️ Auto-listed ${listed} item(s)`);
+    setTimeout(() => location.reload(), 1000);
+  }
+}
+
+// Close modals on backdrop
+['auto-delete-modal','auto-list-modal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+});
 </script>
 {% endblock %}

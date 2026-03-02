@@ -19,6 +19,13 @@
 
 {# ── Tab: My Backpacks ─────────────────────────────────────────────── #}
 <div id="tab-backs">
+  {# Currency bar #}
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+    <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
+    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨 {{ player_plat }}</span>
+    <span class="currency-gem">💎 {{ player_gems }}</span>
+  </div>
   <div class="grid-2">
     {# Owned #}
     <div class="card">
@@ -73,6 +80,13 @@
 
 {# ── Tab: Skins Shop ─────────────────────────────────────────────── #}
 <div id="tab-skins" style="display:none;">
+  {# Currency bar #}
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+    <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
+    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨 {{ player_plat }}</span>
+    <span class="currency-gem">💎 {{ player_gems }}</span>
+  </div>
   <div class="card">
     <div class="card-title">🎨 Character Skins Shop</div>
     {% set slist = shaders.get('shaders',[]) %}
@@ -113,8 +127,14 @@
 
   {# ── 3 equip slots at the top ─────────────────────────────────── #}
   <div class="card" style="margin-bottom:16px;">
-    <div class="card-title">⚡ Equipped Slots
-      <span style="font-size:0.72rem;color:var(--text3);font-family:'Crimson Text',serif;font-weight:400;margin-left:8px;">3 slots available</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title" style="margin-bottom:0;">⚡ Equipped Slots
+        <span style="font-size:0.72rem;color:var(--text3);font-family:'Crimson Text',serif;font-weight:400;margin-left:8px;">3 slots available</span>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);">
+        <input type="checkbox" id="auto-equip-cons-cb" style="accent-color:var(--gold);width:14px;height:14px;">
+        <span class="btn-sm btn-outline-gray">🤖 Auto-Equip</span>
+      </label>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
       {% for slot_num in [1,2,3] %}
@@ -234,7 +254,7 @@
 
   {# Currency bar #}
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
-    <span style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
+    <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
     <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
     <span class="currency-plat">🪨 {{ player_plat }}</span>
     <span class="currency-gem">💎 {{ player_gems }}</span>
@@ -243,7 +263,13 @@
   <div class="grid-2">
     {# My Chests #}
     <div class="card">
-      <div class="card-title-chests">📦 My Chests</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div class="card-title-chests" style="margin-bottom:0;">📦 My Chests</div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.9rem;color:var(--text1);margin-bottom:auto;">
+          <input type="checkbox" id="auto-open-chests-cb" style="accent-color:var(--gold);width:14px;height:14px;">
+          <span class="btn-sm btn-outline-gray">🤖 Auto-Open</span>
+        </label>
+      </div>
       {% set pchests = player_chests.get('chests', []) %}
       {% if pchests %}
       <button class="btn-primary" style="width:100%;margin-bottom:14px;" onclick="openAllChests()">🔮 Open ALL Chests</button>
@@ -677,6 +703,58 @@ async function equipToPickedSlot(consId, name, e) {
 document.getElementById('pick-cons-modal').addEventListener('click', function(e) {
   if (e.target === this) closePickConsModal();
 });
+
+// ── Auto-Equip Consumables ────────────────────────────────────────
+// eq_map from server: consumable_id -> slot number (already equipped)
+const EQ_MAP_INIT = {{ eq_map|tojson }};  // e.g. {"5": 1, "3": 2}
+const EQUIPPED_CONS_SLOTS = new Set(Object.values(EQ_MAP_INIT));  // {1, 2, 3}
+const EQUIPPED_CONS_IDS   = new Set(Object.keys(EQ_MAP_INIT).map(String));
+
+const autoConsCb = document.getElementById('auto-equip-cons-cb');
+if (autoConsCb) {
+  autoConsCb.checked = localStorage.getItem('autoEquipCons') === '1';
+  autoConsCb.addEventListener('change', () => {
+    localStorage.setItem('autoEquipCons', autoConsCb.checked ? '1' : '0');
+    if (autoConsCb.checked) runAutoEquipCons();
+  });
+  // Run on load if enabled and there are empty slots
+  if (autoConsCb.checked) setTimeout(runAutoEquipCons, 800);
+}
+
+async function runAutoEquipCons() {
+  if (ALL_CONSUMABLES.length === 0) return;
+
+  // Find which slots (1-3) are empty based on server data
+  const emptySlots = [1, 2, 3].filter(s => !EQUIPPED_CONS_SLOTS.has(s));
+  if (emptySlots.length === 0) return;  // All slots filled — nothing to do
+
+  // Find consumables not yet in any slot
+  const unequipped = ALL_CONSUMABLES.filter(c => !EQUIPPED_CONS_IDS.has(String(c.id)));
+  if (unequipped.length === 0) return;
+
+  let filled = 0;
+  for (let i = 0; i < emptySlots.length && i < unequipped.length; i++) {
+    const slot = emptySlots[i];
+    const cons = unequipped[i];
+    const res  = await apiAction('/action/equip_consumable', { consumable_id: cons.id, slot });
+    if (res.status === 'success') {
+      toast(`⚡ Auto-equipped ${cons.name} → Slot ${slot}`);
+      filled++;
+    }
+  }
+  if (filled > 0) setTimeout(() => location.reload(), 900);
+}
+
+// ── Auto-Open Chests ──────────────────────────────────────────────
+// Handled by global runner in base.html — checkbox just stores the setting.
+const autoChestCb = document.getElementById('auto-open-chests-cb');
+if (autoChestCb) {
+  autoChestCb.checked = localStorage.getItem('autoOpenChests') === '1';
+  autoChestCb.addEventListener('change', () => {
+    localStorage.setItem('autoOpenChests', autoChestCb.checked ? '1' : '0');
+    if (autoChestCb.checked) toast('📦 Auto-Open Chests enabled — will run in ~30s');
+  });
+}
 
 </script>
 {% endblock %}
