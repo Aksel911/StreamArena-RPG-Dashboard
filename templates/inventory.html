@@ -7,6 +7,13 @@
     <div class="page-title">🎒 Inventory</div>
     <div class="page-subtitle" id="inv-subtitle">{{ items|length }} items on this page</div>
   </div>
+  {# Currency bar #}
+  <div class="auto-card" style="display:inline-block;padding:12px 18px;background:var(--bg2);flex:0;width: auto;min-width: 375px;">
+    <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
+    <span class="currency-gold">🪙Gold: {{ "{:,}".format(user.get('gold', 0)|int) }}</span>
+    <span class="currency-plat">🪨Platinum: {{ user.get('platinum', 0) }}</span>
+    <span class="currency-gem">💎Gems: {{ user.get('gems', 0) }}</span>
+  </div>
 </div>
 
 {# ── Slot filter tabs ───────────────────────────────────────────── #}
@@ -66,6 +73,7 @@
                   border-radius:5px;padding:6px 12px;font-size:0.82rem;width:200px;"
            oninput="applyFilters()">
   </div>
+
 </div>
 
 {# ── Visibility toggles ─────────────────────────────────────────── #}
@@ -116,6 +124,36 @@
       <button class="btn-sm btn-outline-gray" style="font-size:0.91rem; width:auto; max-width:fit-content;" onclick="openAutoDeleteSettings()">⚙️ Settings</button>
     </div>
     <div id="auto-delete-status" style="font-size:0.9rem;color:var(--text2);"></div>
+  </div>
+
+  <div class="card" style="display:flex;gap:12px;flex-wrap:wrap;padding: 0;margin-bottom: 0px;">
+    {# Inventory slots bar #}
+    {% set pct_used = [(items_used / inv_total * 100), 100]|min|round if inv_total > 0 else 0 %}
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 16px;min-width:180px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <span style="font-size:0.9rem;color:var(--text1);">🎒 Inv. Slots:</span>
+        <span style="font-size:0.9rem;font-weight:600;">
+          <span style="color:{% if inv_total > 0 and items_used / inv_total > 0.9 %}var(--red2){% elif inv_total > 0 and items_used / inv_total > 0.75 %}#ffaa44{% else %}var(--teal2){% endif %}">{{ items_used }}</span>
+          <span style="color:var(--text2);font-size:0.9em;">/{{ inv_total }}</span>
+        </span>
+      </div>
+      {% if inv_total > 0 %}
+      <div class="power-bar" style="height:4px;border-radius:2px;margin-bottom:6px;">
+        <div class="power-bar-fill" style="width:{{ pct_used }}%;background:{% if items_used / inv_total > 0.9 %}var(--red2){% elif items_used / inv_total > 0.75 %}#ffaa44{% else %}var(--teal2){% endif %};"></div>
+      </div>
+      {% endif %}
+      <button id="buy-slots-btn"
+              class="btn-sm btn-primary-sm"
+              style="width:100%;font-size:0.72rem;"
+              onclick="buyInvSlots()"
+              {% if inv_total >= 300 %}
+                  disabled title="Max slots reached"
+              {% elif user.get('platinum', 0) | int < next_price %}
+                  disabled title="Not enough 🪨"
+              {% endif %}>
+          🛒 Buy +10 Slots 🪨{{ next_price }}
+      </button>
+    </div>
   </div>
 
   {# Auto-List #}
@@ -766,5 +804,22 @@ async function runAutoList() {
     if (e.target === this) this.style.display = 'none';
   });
 });
+// ── Buy Inventory Slots ───────────────────────────────────────────
+async function buyInvSlots() {
+  const btn = document.getElementById('buy-slots-btn');
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Buying...';
+  const res = await apiAction('/action/buy_inv_slots', {});
+  if (res.status === 'success') {
+    toast(`✅ Slots expanded to ${res.inventory_slots}! Platinum left: ${res.platinum}`);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed to buy slots'), false);
+    btn.textContent = orig;
+    btn.disabled = false;
+  }
+}
+
 </script>
 {% endblock %}

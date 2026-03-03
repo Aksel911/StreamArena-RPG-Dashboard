@@ -60,6 +60,15 @@ CLASS_ICONS = {
     'mage':'🔮','summoner':'👁️','healer':'✨','ranger':'🏹',
 }
 
+# ── Inventory Slot Price Calculator ─────────────────────────────────────────
+def inv_slots_price_calc(inventory_slots: int) -> int:
+    """Returns platinum cost for next +10 inventory slots."""
+    multi = (inventory_slots - 100) / 10.0
+    price = 1
+    for _ in range(int(multi)):
+        price *= 2
+    return int(price)
+
 # ── Auto Worker (server-side background automation) ───────────────────────────
 AUTO_DIR = os.path.join(CACHE_DIR, 'auto')
 os.makedirs(AUTO_DIR, exist_ok=True)
@@ -505,11 +514,17 @@ def inventory():
         item['is_listed']   = str(item['id']) in listed_ids
         item['is_equipped'] = str(item['id']) in equipped_ids
 
+    user        = udata.get('user', {})
+    inv_total   = int(user.get('inventory_slots', 0))
+    items_used  = len(udata.get('player_items', []))
+    next_price  = inv_slots_price_calc(inv_total)
+
     return render_template('inventory.html',
         inv=inv, items=items, page=page,
         locked_ids=locked_ids, listed_ids=listed_ids, equipped_ids=equipped_ids,
         slot_icons=SLOT_ICONS, class_icons=CLASS_ICONS,
-        my_listings=my_listings)
+        my_listings=my_listings,
+        inv_total=inv_total, items_used=items_used, next_price=next_price, user=user)
 
 # ── Equipment ─────────────────────────────────────────────────────────────────
 @app.route('/equipment')
@@ -706,6 +721,13 @@ def api_chat_messages():
 def api_guild_messages():
     if e := _auth(): return e
     return jsonify(guild_api_call({'route':'get_guild_messages'}))
+
+# ── Friends ──────────────────────────────────────────────────────────────────
+@app.route('/friends')
+def friends():
+    if e := _auth(): return e
+    data = api_call({'route': 'get_friend_list', 'version': API_VERSION})
+    return render_template('friends.html', friend_data=data, class_icons=CLASS_ICONS)
 
 # ── Mail ──────────────────────────────────────────────────────────────────────
 @app.route('/mail')
@@ -932,6 +954,86 @@ def action_cancel_all_listings():
         else: fail += 1
     return jsonify({'status': 'success', 'cancelled': ok, 'failed': fail})
 
+
+@app.route('/action/set_back', methods=['POST'])
+def action_set_back():
+    if r := _req(): return r
+    d   = request.get_json()
+    bid = d.get('back_item_id')
+    # bid=None or -1 means unequip (send -1)
+    res = api_call({'route': 'set_back', 'back_item_id': bid if bid is not None else -1})
+    cache_clear(session['token'])
+    return jsonify(res)
+
+@app.route('/action/buy_back', methods=['POST'])
+def action_buy_back():
+    if r := _req(): return r
+    d   = request.get_json()
+    res = api_call({'route': 'buy_back', 'back_item_id': d.get('back_item_id'),
+                    'currency': d.get('currency', 'standard')})
+    cache_clear(session['token'])
+    return jsonify(res)
+
+@app.route('/action/buy_shader', methods=['POST'])
+def action_buy_shader():
+    if r := _req(): return r
+    d   = request.get_json()
+    res = api_call({'route': 'buy_shader', 'shader': d.get('shader'),
+                    'currency': d.get('currency', 'standard')})
+    cache_clear(session['token'])
+    return jsonify(res)
+
+@app.route('/action/set_skin', methods=['POST'])
+def action_set_skin():
+    if r := _req(): return r
+    d   = request.get_json()
+    res = api_call({'route': 'set_skin', 'name_string': d.get('name_string', '')})
+    cache_clear(session['token'])
+    return jsonify(res)
+
+@app.route('/action/buy_inv_slots', methods=['POST'])
+def action_buy_inv_slots():
+    if r := _req(): return r
+    res = api_call({'route': 'buy_inv_slots'})
+    cache_clear(session['token'])
+    return jsonify(res)
+
+# ── Friends actions ───────────────────────────────────────────────────────────
+@app.route('/action/send_friend_request', methods=['POST'])
+def action_send_friend_request():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route': 'send_friend_request', 'target': d.get('target'),
+                              'version': API_VERSION}))
+
+@app.route('/action/cancel_friend_request', methods=['POST'])
+def action_cancel_friend_request():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route': 'cancel_friend_request', 'target': d.get('target'),
+                              'version': API_VERSION}))
+
+@app.route('/action/remove_friend', methods=['POST'])
+def action_remove_friend():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route': 'remove_friend', 'target': d.get('target'),
+                              'version': API_VERSION}))
+
+@app.route('/action/block_user', methods=['POST'])
+def action_block_user():
+    if r := _req(): return r
+    d = request.get_json()
+    return jsonify(api_call({'route': 'block_user', 'target': d.get('target'),
+                              'version': API_VERSION}))
+
+@app.route('/api/get_friend', methods=['GET'])
+def api_get_friend():
+    if not session.get('token'):
+        return jsonify({'error': 'unauthorized'}), 401
+    target = request.args.get('target', '')
+    return jsonify(api_call({'route': 'get_friend', 'target': target,
+                              'version': API_VERSION}))
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -20,11 +20,11 @@
 {# ── Tab: My Backpacks ─────────────────────────────────────────────── #}
 <div id="tab-backs">
   {# Currency bar #}
-  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+  <div class="auto-card" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);align-items:center;">
     <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
-    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
-    <span class="currency-plat">🪨 {{ player_plat }}</span>
-    <span class="currency-gem">💎 {{ player_gems }}</span>
+    <span class="currency-gold">🪙Gold: {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨Platinum: {{ player_plat }}</span>
+    <span class="currency-gem">💎Gems: {{ player_gems }}</span>
   </div>
   <div class="grid-2">
     {# Owned #}
@@ -42,7 +42,13 @@
             </div>
             <div style="font-size:0.7rem;color:var(--text3);margin-top:2px;">ID: {{ b.get('id','?') }}</div>
           </div>
-          <div style="font-size:0.8rem;color:var(--gold2);">✅ Owned</div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            {% if is_eq %}
+            <button class="btn-sm btn-danger" onclick="equipBack(-1,'unequip')" style="white-space:nowrap;font-size: 0.88rem;">🔓 Unequip</button>
+            {% else %}
+            <button class="btn-sm btn-outline-teal" onclick="equipBack({{ b.get('id') }},'equip')" style="white-space:nowrap;font-size: 0.88rem;min-width: 89px;">🎒 Equip</button>
+            {% endif %}
+          </div>
         </div>
         {% endfor %}
       </div>
@@ -63,10 +69,21 @@
             <div style="font-family:'Cinzel',serif;font-size:0.88rem;font-weight:600;">{{ b.get('display_name','?') }}</div>
             <div style="font-size:0.7rem;color:var(--text3);">ID: {{ b.get('id','?') }}</div>
           </div>
-          <div style="text-align:right;font-size:0.8rem;">
+          <div style="text-align:right;font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
             {% if b.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">🪨 {{ b.get('platinum_cost') }}</div>{% endif %}
             {% if b.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💎 {{ b.get('gem_cost') }}</div>{% endif %}
             {% if b.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🪙 {{ "{:,}".format(b.get('gold_cost','0')|int) }}</div>{% endif %}
+            <div style="display:flex;gap:4px;margin-top:2px;">
+              {% if b.get('platinum_cost','0')|int > 0 %}
+              <button class="btn-sm btn-primary-sm" onclick="buyBack({{ b.get('id') }},'platinum')">🪨 Buy</button>
+              {% endif %}
+              {% if b.get('gem_cost','0')|int > 0 %}
+              <button class="btn-sm btn-primary-sm" onclick="buyBack({{ b.get('id') }},'gems')">💎 Buy</button>
+              {% endif %}
+              {% if b.get('gold_cost','0')|int > 0 %}
+              <button class="btn-sm btn-primary-sm" onclick="buyBack({{ b.get('id') }},'gold')">🪙 Buy</button>
+              {% endif %}
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -81,27 +98,36 @@
 {# ── Tab: Skins Shop ─────────────────────────────────────────────── #}
 <div id="tab-skins" style="display:none;">
   {# Currency bar #}
-  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+  <div class="auto-card" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);align-items:center;">
     <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
-    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
-    <span class="currency-plat">🪨 {{ player_plat }}</span>
-    <span class="currency-gem">💎 {{ player_gems }}</span>
+    <span class="currency-gold">🪙Gold: {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨Platinum: {{ player_plat }}</span>
+    <span class="currency-gem">💎Gems: {{ player_gems }}</span>
   </div>
   <div class="card">
     <div class="card-title">🎨 Character Skins Shop</div>
     {% set slist = shaders.get('shaders',[]) %}
     {% if slist %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;">
+    <div style="display:table;">
       {% for s in slist %}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:6px;border:1px solid var(--border);">
+      <div class="auto-card" style="background:var(--bg3);display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:6px;margin-bottom: 10px;">
         <div>
           <div style="font-family:'Cinzel',serif;font-size:0.88rem;font-weight:600;">{{ s.get('display_name','?') }}</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--text3);">{{ s.get('name_string','') }}</div>
         </div>
-        <div style="text-align:right;font-size:0.8rem;">
-          {% if s.get('platinum_cost','0')|int > 0 %}<div class="currency-plat">🪨 {{ s.get('platinum_cost') }}</div>{% endif %}
-          {% if s.get('gem_cost','0')|int > 0 %}<div class="currency-gem">💎 {{ s.get('gem_cost') }}</div>{% endif %}
-          {% if s.get('gold_cost','0')|int > 0 %}<div class="currency-gold">🪙 {{ "{:,}".format(s.get('gold_cost','0')|int) }}</div>{% endif %}
+        <div style="text-align:right;font-size:0.8rem;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <div style="display:grid;gap:4px;margin-top:4px;justify-content:flex-end;">
+            {% if s.get('platinum_cost','0')|int > 0 %}
+            <button class="btn-sm btn-outline-teal" onclick="buySkin('{{ s.get('name_string','') }}','platinum')">🪨 Buy {{ s.get('platinum_cost') }} (Platinum)</button>
+            {% endif %}
+            {% if s.get('gem_cost','0')|int > 0 %}
+            <button class="btn-sm btn-outline-blue" onclick="buySkin('{{ s.get('name_string','') }}','gems')">💎 Buy {{ s.get('gem_cost') }} (Gems)</button>
+            {% endif %}
+            {% if s.get('gold_cost','0')|int > 0 %}
+            <button class="btn-sm btn-primary-sm" onclick="buySkin('{{ s.get('name_string','') }}','gold')">🪙 Buy {{ "{:,}".format(s.get('gold_cost','0')|int) }} (Gold)</button>
+            {% endif %}
+            <button class="btn-sm btn-outline-gray" onclick="equipSkin('{{ s.get('name_string','') }}')">✨ Equip</button>
+          </div>
         </div>
       </div>
       {% endfor %}
@@ -253,11 +279,11 @@
 <div id="tab-chests" style="display:none;">
 
   {# Currency bar #}
-  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;align-items:center;">
+  <div class="auto-card" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding:12px 18px;background:var(--bg2);align-items:center;">
     <span style="font-size:0.72rem;color:var(--text1);text-transform:uppercase;letter-spacing:0.08em;font-family:'Cinzel',serif;">Balance</span>
-    <span class="currency-gold">🪙 {{ "{:,}".format(player_gold) }}</span>
-    <span class="currency-plat">🪨 {{ player_plat }}</span>
-    <span class="currency-gem">💎 {{ player_gems }}</span>
+    <span class="currency-gold">🪙Gold: {{ "{:,}".format(player_gold) }}</span>
+    <span class="currency-plat">🪨Platinum: {{ player_plat }}</span>
+    <span class="currency-gem">💎Gems: {{ player_gems }}</span>
   </div>
 
   <div class="grid-2">
@@ -755,6 +781,67 @@ if (autoChestCb) {
     if (autoChestCb.checked) toast('📦 Auto-Open Chests enabled — will run in ~30s');
   });
 }
+
+// ── Backpack Equip/Unequip ────────────────────────────────────────
+async function equipBack(backId, mode) {
+  const btn = event.target;
+  btn.disabled = true;
+  const payload = backId === -1 ? { back_item_id: -1 } : { back_item_id: backId };
+  const res = await apiAction('/action/set_back', payload);
+  if (res.status === 'success') {
+    toast(mode === 'equip' ? '🎒 Backpack equipped!' : '🔓 Backpack unequipped!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+    btn.disabled = false;
+  }
+}
+
+// ── Buy Backpack ──────────────────────────────────────────────────
+async function buyBack(itemId, currency) {
+  const btn = event.target;
+  btn.disabled = true;
+  const res = await apiAction('/action/buy_back', { back_item_id: itemId, currency });
+  if (res.status === 'success') {
+    toast('✅ Backpack purchased!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+    btn.disabled = false;
+  }
+}
+
+// ── Buy Skin ──────────────────────────────────────────────────────
+async function buySkin(shader, currency) {
+  const btn = event.target;
+  btn.disabled = true;
+  const res = await apiAction('/action/buy_shader', { shader, currency });
+  if (res.status === 'success') {
+    toast('✅ Skin purchased!');
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+    btn.disabled = false;
+  }
+}
+
+// ── Equip Skin ────────────────────────────────────────────────────
+async function equipSkin(shader) {
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  const res = await apiAction('/action/set_skin', { name_string: shader });
+  if (res.status === 'success') {
+    toast('✨ Skin equipped: ' + shader);
+    setTimeout(() => location.reload(), 700);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
 
 </script>
 {% endblock %}

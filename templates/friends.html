@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Friends{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">👥 Friends</div>
+    <div class="page-subtitle">
+      {% set fl = friend_data.get('friends', []) %}
+      {% set pending = friend_data.get('pending_requests', []) %}
+      {{ fl|length }} friend(s){% if pending %} · {{ pending|length }} pending{% endif %}
+    </div>
+  </div>
+</div>
+
+{# ── Add Friend ──────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title">➕ Add / Search Friend</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input type="text" id="friend-target" placeholder="Enter username..."
+           style="flex:1;min-width:180px;" maxlength="64"
+           onkeydown="if(event.key==='Enter')sendFriendRequest()">
+    <button class="btn-sm btn-outline-blue" style="color:var(--text2);padding:7px 14px;flex:none;font-weight: bold;" onclick="sendFriendRequest()">
+      📩 Send Friend Request
+    </button>
+    <button class="btn-sm btn-outline-teal" style="color:var(--text2);padding:7px 14px;flex:none;font-weight: bold;"
+            onclick="lookupFriend()">
+      🔍 Look up
+    </button>
+  </div>
+
+  {# Lookup result #}
+  <div id="lookup-result" style="display:none;margin-top:14px;padding:14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);"></div>
+</div>
+
+<div class="grid-2">
+
+  {# ── Friends List ────────────────────────────────────────────── #}
+  <div class="card">
+    <div class="card-title">🤝 Friends ({{ fl|length }})</div>
+    {% if fl %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for f in fl %}
+      {% set ch = f.get('character', {}) %}
+      <div class="friend-row" style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:1.4rem;">{{ class_icons.get(ch.get('class',''), '⚔️') }}</div>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:600;color:var(--gold2);">
+              {{ f.get('username', '?') }}
+            </div>
+            <div style="font-size:0.72rem;color:var(--text3);">
+              {{ ch.get('class','—')|title }} · Lv {{ ch.get('level','?') }}
+              {% if ch.get('last_played_on') %}· {{ ch.get('last_played_on') }}{% endif %}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm btn-danger" onclick="removeFriend('{{ f.get('username','') }}')" title="Remove friend">
+            ✕ Remove
+          </button>
+          <button class="btn-sm" style="background:var(--bg4);border:1px solid var(--border);color:var(--text3);"
+                  onclick="blockUser('{{ f.get('username','') }}')" title="Block user">
+            🚫 Block
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><div class="icon">👥</div><p>No friends yet. Send a request above!</p></div>
+    {% endif %}
+  </div>
+
+  {# ── Pending & Other ─────────────────────────────────────────── #}
+  <div>
+    {# Pending Requests Received #}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">📬 Pending Requests
+        {% if pending %}<span class="badge badge-gold" style="font-size:0.65rem;margin-left:4px;">{{ pending|length }}</span>{% endif %}
+      </div>
+      {% if pending %}
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for p in pending %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg3);border-radius:7px;border:1px solid rgba(201,168,76,0.25);">
+          <div>
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text);">{{ p.get('username','?') }}</div>
+            <div style="font-size:0.7rem;color:var(--text3);">Wants to be your friend</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn-sm btn-primary-sm" onclick="sendFriendRequestTo('{{ p.get('username','') }}')">
+              ✅ Accept
+            </button>
+            <button class="btn-sm btn-danger" onclick="cancelFriendRequest('{{ p.get('username','') }}')">
+              ✕ Decline
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:16px;"><div class="icon" style="font-size:1.5rem;">📭</div><p>No pending requests.</p></div>
+      {% endif %}
+    </div>
+
+    {# Sent Requests #}
+    {% set sent = friend_data.get('sent_requests', []) %}
+    {% if sent %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">📤 Sent Requests</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for s in sent %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg3);border-radius:7px;border:1px solid var(--border);">
+          <div>
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text);">{{ s.get('username','?') }}</div>
+            <div style="font-size:0.7rem;color:var(--text3);">Request pending</div>
+          </div>
+          <button class="btn-sm btn-danger" onclick="cancelFriendRequest('{{ s.get('username','') }}')">✕ Cancel</button>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {# Blocked Users #}
+    {% set blocked = friend_data.get('blocked', []) %}
+    {% if blocked %}
+    <div class="card">
+      <div class="card-title">🚫 Blocked Users</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        {% for b in blocked %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:6px;border:1px solid rgba(200,50,50,0.2);">
+          <span style="font-size:0.88rem;color:var(--text2);">{{ b.get('username','?') }}</span>
+          <span class="badge badge-red" style="font-size:0.65rem;">Blocked</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// ── Send Friend Request ───────────────────────────────────────────
+async function sendFriendRequest() {
+  const target = document.getElementById('friend-target').value.trim();
+  if (!target) return;
+  await _friendAction('send_friend_request', target, '✅ Friend request sent to ' + target);
+}
+
+async function sendFriendRequestTo(target) {
+  await _friendAction('send_friend_request', target, '✅ Friend request accepted / sent to ' + target);
+}
+
+async function cancelFriendRequest(target) {
+  if (!confirm(`Cancel request to ${target}?`)) return;
+  await _friendAction('cancel_friend_request', target, '✅ Request cancelled');
+}
+
+async function removeFriend(target) {
+  if (!confirm(`Remove ${target} from friends?`)) return;
+  await _friendAction('remove_friend', target, '✅ Removed ' + target);
+}
+
+async function blockUser(target) {
+  if (!confirm(`Block ${target}? They will not be able to contact you.`)) return;
+  await _friendAction('block_user', target, '🚫 Blocked ' + target);
+}
+
+async function _friendAction(route, target, successMsg) {
+  const res = await apiAction('/action/' + route, { target });
+  if (res.status === 'success') {
+    toast(successMsg);
+    setTimeout(() => location.reload(), 800);
+  } else {
+    toast('❌ ' + (res.message || res.error || 'Failed'), false);
+  }
+}
+
+// ── Lookup friend profile ─────────────────────────────────────────
+async function lookupFriend() {
+  const target = document.getElementById('friend-target').value.trim();
+  if (!target) return;
+  const resultEl = document.getElementById('lookup-result');
+  resultEl.style.display = '';
+  resultEl.innerHTML = '<span style="color:var(--text3);">⏳ Looking up...</span>';
+  try {
+    const res = await fetch('/api/get_friend?target=' + encodeURIComponent(target));
+    const data = await res.json();
+    if (data.status === 'success' || data.character) {
+      const ch = data.character || {};
+      resultEl.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:var(--gold2);">${target}</div>
+            <div style="font-size:0.78rem;color:var(--text3);margin-top:2px;">
+              ${ch.class ? ch.class.charAt(0).toUpperCase() + ch.class.slice(1) : '?'} · 
+              Level ${ch.level || '?'} · 
+              ${ch.last_played_on || ''}
+            </div>
+          </div>
+          <button class="btn-sm btn-primary-sm" onclick="sendFriendRequestTo('${target}')">📩 Add Friend</button>
+        </div>`;
+    } else {
+      resultEl.innerHTML = `<span style="color:var(--red2);">❌ ${data.message || data.error || 'Player not found'}</span>`;
+    }
+  } catch {
+    resultEl.innerHTML = '<span style="color:var(--red2);">❌ Network error</span>';
+  }
+}
+</script>
+{% endblock %}
